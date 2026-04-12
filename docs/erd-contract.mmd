@@ -1,0 +1,53 @@
+---
+title: "2. Contract & Work Plan"
+---
+erDiagram
+    users {
+        bigint user_id PK
+        varchar userid UK
+        varchar username
+        varchar userRole
+    }
+    tb_infra_master {
+        bigint infra_id PK
+        varchar sys_nm
+    }
+    tb_contract {
+        int contract_id PK
+        bigint infra_id FK
+        varchar contract_name
+        varchar contract_type
+        bigint contract_amount
+        date start_date
+        date end_date
+        varchar progress_status
+    }
+    tb_contract_participant {
+        int participant_id PK
+        int contract_id FK
+        bigint user_id FK
+        varchar role_type
+        boolean is_site_rep
+    }
+    tb_contract_target {
+        int target_id PK
+        int contract_id FK
+        bigint sw_id FK
+        varchar product_name
+        int quantity
+    }
+    tb_work_plan {
+        int plan_id PK
+        bigint infra_id FK
+        varchar plan_type
+        bigint assignee_id FK
+        varchar title
+        date start_date
+        varchar status
+    }
+    tb_infra_master ||--o{ tb_contract : "has"
+    tb_contract ||--o{ tb_contract_participant : "has"
+    tb_contract ||--o{ tb_contract_target : "has"
+    users ||--o{ tb_contract_participant : "joins"
+    tb_infra_master ||--o{ tb_work_plan : "has"
+    users ||--o{ tb_work_plan : "assigned"

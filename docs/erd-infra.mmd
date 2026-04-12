@@ -1,0 +1,51 @@
+---
+title: "1. Infrastructure Management"
+---
+erDiagram
+    tb_infra_master {
+        bigint infra_id PK
+        varchar infra_type
+        varchar city_nm
+        varchar dist_nm
+        varchar sys_nm
+        varchar sys_nm_en
+    }
+    tb_infra_server {
+        bigint server_id PK
+        bigint infra_id FK
+        varchar server_type
+        varchar ip_addr
+        varchar os_nm
+        varchar server_model
+    }
+    tb_infra_software {
+        bigint sw_id PK
+        bigint server_id FK
+        varchar sw_category
+        varchar sw_nm
+        varchar sw_ver
+        varchar port
+    }
+    tb_infra_link_upis {
+        bigint link_id PK
+        bigint infra_id FK
+        varchar kras_ip
+        varchar gpki_id
+    }
+    tb_infra_link_api {
+        bigint api_id PK
+        bigint infra_id FK
+        varchar naver_news_key
+        varchar public_data_key
+    }
+    tb_infra_memo {
+        bigint memo_id PK
+        bigint infra_id FK
+        varchar memo_content
+        date memo_date
+    }
+    tb_infra_master ||--o{ tb_infra_server : "has servers"
+    tb_infra_server ||--o{ tb_infra_software : "has software"
+    tb_infra_master ||--o{ tb_infra_link_upis : "UPIS links"
+    tb_infra_master ||--o{ tb_infra_link_api : "API links"
+    tb_infra_master ||--o{ tb_infra_memo : "memos"

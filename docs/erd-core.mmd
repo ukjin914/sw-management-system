@@ -1,0 +1,66 @@
+---
+title: "5. Core, License & Performance"
+---
+erDiagram
+    users {
+        bigint user_id PK
+        varchar userid UK
+        varchar username
+        varchar password
+        varchar orgNm
+        varchar deptNm
+        varchar userRole
+        varchar position
+    }
+    access_logs {
+        bigint log_id PK
+        varchar userid
+        varchar ip_addr
+        datetime access_time
+        varchar action_type
+    }
+    sw_pjt {
+        bigint proj_id PK
+        varchar proj_nm
+        varchar sys_nm
+        bigint cont_amt
+        varchar stat
+    }
+    ps_info {
+        bigint id PK
+        varchar sys_nm
+        varchar org_nm
+        varchar user_nm
+    }
+    tb_performance_summary {
+        int summary_id PK
+        bigint user_id FK
+        int period_year
+        int period_month
+    }
+    tb_inspect_cycle {
+        int cycle_id PK
+        bigint infra_id FK
+        bigint assignee_id FK
+        varchar cycle_type
+    }
+    license_registry {
+        bigint id PK
+        varchar license_id
+        varchar product_id
+        varchar license_type
+    }
+    geonuris_license {
+        bigint id PK
+        varchar license_type
+        varchar mac_address
+        datetime expiry_date
+    }
+    qr_license {
+        bigint qr_id PK
+        varchar end_user_name
+        varchar products
+        varchar serial_number
+    }
+    users ||--o{ tb_performance_summary : "has"
+    users ||--o{ tb_inspect_cycle : "assigned"

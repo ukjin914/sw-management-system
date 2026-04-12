@@ -1,0 +1,57 @@
+---
+title: "3. Document Management"
+---
+erDiagram
+    tb_document {
+        int doc_id PK
+        varchar doc_no UK
+        varchar doc_type
+        bigint infra_id FK
+        int plan_id FK
+        int contract_id FK
+        bigint proj_id FK
+        bigint author_id FK
+        varchar status
+    }
+    tb_document_detail {
+        int detail_id PK
+        int doc_id FK
+        varchar section_key
+        jsonb section_data
+    }
+    tb_document_history {
+        int history_id PK
+        int doc_id FK
+        varchar action
+        bigint actor_id FK
+    }
+    tb_document_attachment {
+        int attach_id PK
+        int doc_id FK
+        varchar file_name
+        bigint file_size
+    }
+    tb_document_signature {
+        int sign_id PK
+        int doc_id FK
+        varchar signer_type
+        varchar signer_name
+    }
+    tb_inspect_checklist {
+        int check_id PK
+        int doc_id FK
+        varchar check_item
+        varchar check_result
+    }
+    tb_inspect_issue {
+        int issue_id PK
+        int doc_id FK
+        varchar task_type
+        text symptom
+    }
+    tb_document ||--o{ tb_document_detail : "details"
+    tb_document ||--o{ tb_document_history : "history"
+    tb_document ||--o{ tb_document_attachment : "files"
+    tb_document ||--o{ tb_document_signature : "signs"
+    tb_document ||--o{ tb_inspect_checklist : "checklist"
+    tb_document ||--o{ tb_inspect_issue : "issues"

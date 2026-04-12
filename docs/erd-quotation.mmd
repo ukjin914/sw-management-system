@@ -1,0 +1,50 @@
+---
+title: "4. Quotation Management"
+---
+erDiagram
+    qt_quotation {
+        bigint quote_id PK
+        varchar quote_number UK
+        date quote_date
+        varchar category
+        varchar project_name
+        bigint total_amount
+        bigint grand_total
+    }
+    qt_quotation_item {
+        bigint item_id PK
+        bigint quote_id FK
+        int item_no
+        varchar product_name
+        bigint unit_price
+        bigint amount
+    }
+    qt_quotation_ledger {
+        bigint ledger_id PK
+        bigint quote_id
+        int year
+        varchar project_name
+    }
+    qt_quote_number_seq {
+        bigint seq_id PK
+        int year
+        varchar category
+        int last_seq
+    }
+    qt_product_pattern {
+        bigint pattern_id PK
+        varchar category
+        varchar product_name
+    }
+    qt_remarks_pattern {
+        bigint pattern_id PK
+        varchar pattern_name
+        text content
+    }
+    qt_wage_rate {
+        bigint wage_id PK
+        int year
+        varchar grade_name
+        bigint daily_rate
+    }
+    qt_quotation ||--o{ qt_quotation_item : "has items"

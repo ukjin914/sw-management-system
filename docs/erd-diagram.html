@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SW Management System - ERD</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: white; font-family: 'Malgun Gothic', sans-serif; }
+  h1 { text-align: center; color: #2c3e50; margin-bottom: 2px; font-size: 22px; }
+  h3 { text-align: center; color: #7f8c8d; margin-top: 2px; font-size: 14px; }
+  .section { margin: 30px auto; max-width: 1400px; }
+  .section h2 { color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 16px; display: inline-block; }
+  .s1 h2 { background: #3498db; }
+  .s2 h2 { background: #e67e22; }
+  .s3 h2 { background: #2ecc71; }
+  .s4 h2 { background: #9b59b6; }
+  .s5 h2 { background: #e74c3c; }
+  .s6 h2 { background: #1abc9c; }
+  .mermaid { margin: 10px 0; }
+  .legend { text-align: center; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 13px; color: #555; }
+</style>
+</head>
+<body>
+<h1>SW Management System - ERD</h1>
+<h3>41 Tables / 7 Domains / PostgreSQL</h3>
+<div class="legend">PK = Primary Key | FK = Foreign Key | ||--o{ = One-to-Many</div>
+
+<div class="section s1">
+<h2>1. Infra (Infrastructure Management)</h2>
+<div class="mermaid">
+erDiagram
+    tb_infra_master {
+        bigint infra_id PK
+        varchar infra_type
+        varchar city_nm
+        varchar dist_nm
+        varchar sys_nm
+        varchar sys_nm_en
+    }
+    tb_infra_server {
+        bigint server_id PK
+        bigint infra_id FK
+        varchar server_type
+        varchar ip_addr
+        varchar os_nm
+        varchar server_model
+        varchar cpu_spec
+        varchar memory_spec
+    }
+    tb_infra_software {
+        bigint sw_id PK
+        bigint server_id FK
+        varchar sw_category
+        varchar sw_nm
+        varchar sw_ver
+        varchar port
+    }
+    tb_infra_link_upis {
+        bigint link_id PK
+        bigint infra_id FK
+        varchar kras_ip
+        varchar gpki_id
+    }
+    tb_infra_link_api {
+        bigint api_id PK
+        bigint infra_id FK
+        varchar naver_news_key
+        varchar public_data_key
+        varchar vworld_key
+    }
+    tb_infra_memo {
+        bigint memo_id PK
+        bigint infra_id FK
+        varchar memo_content
+        varchar memo_writer
+        date memo_date
+    }
+    tb_infra_master ||--o{ tb_infra_server : "has"
+    tb_infra_server ||--o{ tb_infra_software : "has"
+    tb_infra_master ||--o{ tb_infra_link_upis : "has"
+    tb_infra_master ||--o{ tb_infra_link_api : "has"
+    tb_infra_master ||--o{ tb_infra_memo : "has"
+</div>
+</div>
+
+<div class="section s2">
+<h2>2. Contract & Work Plan</h2>
+<div class="mermaid">
+erDiagram
+    users {
+        bigint user_id PK
+        varchar userid UK
+        varchar username
+        varchar userRole
+        varchar position
+        varchar techGrade
+    }
+    tb_infra_master {
+        bigint infra_id PK
+        varchar sys_nm
+    }
+    tb_contract {
+        int contract_id PK
+        bigint infra_id FK
+        varchar contract_name
+        varchar contract_type
+        bigint contract_amount
+        date start_date
+        date end_date
+        varchar progress_status
+    }
+    tb_contract_participant {
+        int participant_id PK
+        int contract_id FK
+        bigint user_id FK
+        varchar role_type
+        varchar tech_grade
+        boolean is_site_rep
+    }
+    tb_contract_target {
+        int target_id PK
+        int contract_id FK
+        bigint sw_id FK
+        varchar product_name
+        int quantity
+    }
+    tb_work_plan {
+        int plan_id PK
+        bigint infra_id FK
+        varchar plan_type
+        bigint assignee_id FK
+        varchar title
+        date start_date
+        varchar status
+        int parent_plan_id FK
+    }
+    tb_infra_master ||--o{ tb_contract : "has"
+    tb_contract ||--o{ tb_contract_participant : "has"
+    tb_contract ||--o{ tb_contract_target : "has"
+    users ||--o{ tb_contract_participant : "joins"
+    tb_infra_master ||--o{ tb_work_plan : "has"
+    users ||--o{ tb_work_plan : "assigned"
+</div>
+</div>
+
+<div class="section s3">
+<h2>3. Document Management</h2>
+<div class="mermaid">
+erDiagram
+    tb_document {
+        int doc_id PK
+        varchar doc_no UK
+        varchar doc_type
+        bigint infra_id FK
+        int plan_id FK
+        int contract_id FK
+        bigint proj_id FK
+        bigint author_id FK
+        bigint approver_id FK
+        varchar status
+    }
+    tb_document_detail {
+        int detail_id PK
+        int doc_id FK
+        varchar section_key
+        jsonb section_data
+    }
+    tb_document_history {
+        int history_id PK
+        int doc_id FK
+        varchar action
+        bigint actor_id FK
+    }
+    tb_document_attachment {
+        int attach_id PK
+        int doc_id FK
+        varchar file_name
+        varchar file_path
+        bigint file_size
+    }
+    tb_document_signature {
+        int sign_id PK
+        int doc_id FK
+        varchar signer_type
+        varchar signer_name
+    }
+    tb_inspect_checklist {
+        int check_id PK
+        int doc_id FK
+        varchar check_item
+        varchar check_result
+    }
+    tb_inspect_issue {
+        int issue_id PK
+        int doc_id FK
+        varchar task_type
+        text symptom
+    }
+    tb_document ||--o{ tb_document_detail : "has"
+    tb_document ||--o{ tb_document_history : "has"
+    tb_document ||--o{ tb_document_attachment : "has"
+    tb_document ||--o{ tb_document_signature : "has"
+    tb_document ||--o{ tb_inspect_checklist : "has"
+    tb_document ||--o{ tb_inspect_issue : "has"
+</div>
+</div>
+
+<div class="section s4">
+<h2>4. Quotation Management</h2>
+<div class="mermaid">
+erDiagram
+    qt_quotation {
+        bigint quote_id PK
+        varchar quote_number UK
+        date quote_date
+        varchar category
+        varchar project_name
+        bigint total_amount
+        bigint grand_total
+    }
+    qt_quotation_item {
+        bigint item_id PK
+        bigint quote_id FK
+        int item_no
+        varchar product_name
+        bigint unit_price
+        bigint amount
+    }
+    qt_quotation_ledger {
+        bigint ledger_id PK
+        bigint quote_id
+        int year
+        varchar project_name
+    }
+    qt_quote_number_seq {
+        bigint seq_id PK
+        int year
+        varchar category
+        int last_seq
+    }
+    qt_product_pattern {
+        bigint pattern_id PK
+        varchar category
+        varchar product_name
+    }
+    qt_remarks_pattern {
+        bigint pattern_id PK
+        varchar pattern_name
+        text content
+    }
+    qt_wage_rate {
+        bigint wage_id PK
+        int year
+        varchar grade_name
+        bigint daily_rate
+    }
+    qt_quotation ||--o{ qt_quotation_item : "has"
+</div>
+</div>
+
+<div class="section s5">
+<h2>5. License Management</h2>
+<div class="mermaid">
+erDiagram
+    license_registry {
+        bigint id PK
+        varchar license_id
+        varchar product_id
+        varchar license_type
+        text license_string
+        datetime upload_date
+    }
+    license_upload_history {
+        bigint id PK
+        datetime upload_date
+        varchar file_name
+        int total_count
+        int success_count
+    }
+    geonuris_license {
+        bigint id PK
+        varchar license_type
+        varchar mac_address
+        datetime start_date
+        datetime expiry_date
+    }
+    qr_license {
+        bigint qr_id PK
+        varchar end_user_name
+        varchar products
+        varchar serial_number
+    }
+</div>
+</div>
+
+<div class="section s6">
+<h2>6. Core & Lookup Tables</h2>
+<div class="mermaid">
+erDiagram
+    users {
+        bigint user_id PK
+        varchar userid UK
+        varchar username
+        varchar password
+        varchar orgNm
+        varchar deptNm
+        varchar teamNm
+        varchar userRole
+        varchar position
+        boolean enabled
+    }
+    access_logs {
+        bigint log_id PK
+        varchar userid
+        varchar ip_addr
+        datetime access_time
+        varchar action_type
+    }
+    sw_pjt {
+        bigint proj_id PK
+        varchar proj_nm
+        varchar sys_nm
+        varchar org_nm
+        bigint cont_amt
+        varchar stat
+    }
+    ps_info {
+        bigint id PK
+        varchar sys_nm
+        varchar org_nm
+        varchar user_nm
+    }
+    tb_inspect_cycle {
+        int cycle_id PK
+        bigint infra_id FK
+        varchar cycle_type
+        bigint assignee_id FK
+    }
+    tb_performance_summary {
+        int summary_id PK
+        bigint user_id FK
+        int period_year
+        int period_month
+    }
+    sys_mst { varchar cd PK  }
+    sigungu_code { varchar adm_sect_c PK }
+    prj_types { varchar cd PK }
+    cont_stat_mst { varchar cd PK }
+    cont_frm_mst { varchar cd PK }
+    maint_tp_mst { varchar cd PK }
+    users ||--o{ tb_performance_summary : "has"
+    users ||--o{ tb_inspect_cycle : "assigned"
+</div>
+</div>
+
+</body>
+</html>
