@@ -123,7 +123,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="d, stat : ${documents}" th:onclick="'location.href=\'/document/detail/' + ${d.docId} + '\''">
+                    <tr th:each="d, stat : ${documents}" th:attr="onclick=${d.docType == 'INSPECT' and d.docNo != null and d.docNo.startsWith('INSP-')} ? 'location.href=\'/document/inspect-detail/' + ${d.docNo.substring(5)} + '\'' : 'location.href=\'/document/detail/' + ${d.docId} + '\''">
                         <td th:text="${documents.totalElements - (documents.number * documents.size) - stat.index}">1</td>
                         <td th:text="${d.docNo}">-</td>
                         <td><span class="badge type-badge" th:text="${T(com.swmanager.system.dto.DocumentDTO).getDocTypeLabel(d.docType)}">유형</span></td>

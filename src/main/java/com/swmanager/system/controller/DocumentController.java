@@ -18,6 +18,10 @@ import com.swmanager.system.service.PdfExportService;
 import com.swmanager.system.service.HwpxExportService;
 import com.swmanager.system.service.ExcelExportService;
 import com.swmanager.system.service.LogService;
+import com.swmanager.system.service.InspectReportService;
+import com.swmanager.system.service.InspectPdfService;
+import com.swmanager.system.dto.InspectReportDTO;
+import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.domain.workplan.ProcessMaster;
 import com.swmanager.system.domain.workplan.ServicePurpose;
 import com.swmanager.system.domain.workplan.ContractParticipant;
@@ -60,6 +64,8 @@ public class DocumentController {
     @Autowired private com.swmanager.system.repository.PjtTargetRepository pjtTargetRepository;
     @Autowired private com.swmanager.system.repository.PjtManpowerPlanRepository pjtManpowerPlanRepository;
     @Autowired private com.swmanager.system.repository.PjtScheduleRepository pjtScheduleRepository;
+    @Autowired private InspectReportService inspectReportService;
+    @Autowired private InspectPdfService inspectPdfService;
 
     // === 권한 ===
 
@@ -153,6 +159,7 @@ public class DocumentController {
                               @RequestParam(required = false) Long infraId,
                               @RequestParam(required = false) Long projId,
                               @RequestParam(required = false) Integer docId,
+                              @RequestParam(required = false) Long reportId,
                               Model model, RedirectAttributes rttr) {
         if (!"EDIT".equals(getAuth())) {
             rttr.addFlashAttribute("errorMessage", "작성 권한이 없습니다.");
@@ -166,6 +173,7 @@ public class DocumentController {
         model.addAttribute("docType", docType);
         model.addAttribute("infraId", infraId);
         model.addAttribute("projId", projId);
+        model.addAttribute("reportId", reportId);
         model.addAttribute("infraList", infraRepository.findAll(Sort.by("cityNm", "distNm")));
         model.addAttribute("projects", swProjectRepository.findAll(Sort.by(Sort.Direction.DESC, "year", "projId")));
         model.addAttribute("users", userRepository.findByEnabledTrue());
@@ -613,6 +621,7 @@ public class DocumentController {
             data.put("contAmt", p.getContAmt());
             data.put("contRt", p.getContRt());
             data.put("swAmt", p.getSwAmt());
+            data.put("hwAmt", p.getHwAmt());
             data.put("contDt", p.getContDt() != null ? p.getContDt().toString() : null);
             data.put("startDt", p.getStartDt() != null ? p.getStartDt().toString() : null);
             data.put("endDt", p.getEndDt() != null ? p.getEndDt().toString() : null);
@@ -1223,5 +1232,243 @@ public class DocumentController {
         if (o == null) return false;
         if (o instanceof Boolean) return (Boolean) o;
         return "true".equalsIgnoreCase(o.toString()) || "1".equals(o.toString());
+    }
+
+    // ============================================================
+    // 점검내역서 API
+    // ============================================================
+
+    /** POST /document/api/inspect-report - 저장 (신규/수정) */
+    @PostMapping("/api/inspect-report")
+    @ResponseBody
+    public ResponseEntity<?> saveInspectReport(@RequestBody InspectReportDTO dto) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            InspectReportDTO saved = inspectReportService.save(dto);
+            result.put("success", true);
+            result.put("data", saved);
+        } catch (Exception e) {
+            log.error("점검내역서 저장 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** GET /document/api/inspect-report/{id} - 단건 조회 */
+    @GetMapping("/api/inspect-report/{id}")
+    @ResponseBody
+    public ResponseEntity<?> getInspectReport(@PathVariable Long id) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            InspectReportDTO dto = inspectReportService.findById(id);
+            result.put("success", true);
+            result.put("data", dto);
+        } catch (Exception e) {
+            log.error("점검내역서 조회 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** GET /document/api/inspect-reports?pjtId={pjtId} - 프로젝트별 목록 */
+    @GetMapping("/api/inspect-reports")
+    @ResponseBody
+    public ResponseEntity<?> listInspectReports(@RequestParam Long pjtId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            result.put("success", true);
+            result.put("data", inspectReportService.findByProject(pjtId));
+        } catch (Exception e) {
+            log.error("점검내역서 목록 조회 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** DELETE /document/api/inspect-report/{id} - 삭제 */
+    @DeleteMapping("/api/inspect-report/{id}")
+    @ResponseBody
+    public ResponseEntity<?> deleteInspectReport(@PathVariable Long id) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            inspectReportService.delete(id);
+            result.put("success", true);
+        } catch (Exception e) {
+            log.error("점검내역서 삭제 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** GET /document/api/inspect-template?type={templateType} - 템플릿 조회 */
+    @GetMapping("/api/inspect-template")
+    @ResponseBody
+    public ResponseEntity<?> getInspectTemplate(@RequestParam String type) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            List<InspectCheckResultDTO> items = inspectReportService.getTemplateItems(type);
+            result.put("success", true);
+            result.put("data", items);
+        } catch (Exception e) {
+            log.error("점검 템플릿 조회 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** GET /document/api/infra-servers?distNm=양양군&sysNmEn=UPIS - 인프라 서버정보 조회 */
+    @GetMapping("/api/infra-servers")
+    @ResponseBody
+    public ResponseEntity<?> getInfraServers(@RequestParam String distNm, @RequestParam String sysNmEn) {
+        var infraList = infraRepository.findByDistNmAndSysNmEn(distNm, sysNmEn);
+        if (infraList.isEmpty()) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+        var infra = infraList.get(0);
+        List<Map<String, Object>> servers = new ArrayList<>();
+        for (var s : infra.getServers()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("serverId", s.getServerId());
+            m.put("serverType", s.getServerType());
+            m.put("ipAddr", s.getIpAddr());
+            m.put("osNm", s.getOsNm());
+            m.put("macAddr", s.getMacAddr());
+            m.put("serverModel", s.getServerModel());
+            m.put("serialNo", s.getSerialNo());
+            m.put("cpuSpec", s.getCpuSpec());
+            m.put("memorySpec", s.getMemorySpec());
+            m.put("diskSpec", s.getDiskSpec());
+            m.put("networkSpec", s.getNetworkSpec());
+            m.put("powerSpec", s.getPowerSpec());
+            m.put("osDetail", s.getOsDetail());
+            m.put("rackLocation", s.getRackLocation());
+            m.put("note", s.getNote());
+            // 소프트웨어 목록
+            List<Map<String, String>> swList = new ArrayList<>();
+            for (var sw : s.getSoftwares()) {
+                Map<String, String> swMap = new LinkedHashMap<>();
+                swMap.put("swCategory", sw.getSwCategory());
+                swMap.put("swNm", sw.getSwNm());
+                swMap.put("swVer", sw.getSwVer() != null ? sw.getSwVer() : "");
+                swList.add(swMap);
+            }
+            m.put("softwares", swList);
+            servers.add(m);
+        }
+        return ResponseEntity.ok(servers);
+    }
+
+    // ============================================================
+    // 점검내역서 미리보기 / PDF 다운로드
+    // ============================================================
+
+    /** GET /document/api/inspect-pdf/{reportId} - 점검내역서 PDF 다운로드 */
+    @GetMapping("/api/inspect-pdf/{reportId}")
+    @ResponseBody
+    public ResponseEntity<byte[]> downloadInspectPdf(@PathVariable Long reportId) {
+        try {
+            byte[] pdf = inspectPdfService.generatePdf(reportId);
+            InspectReportDTO report = inspectReportService.findById(reportId);
+            String monthSuffix = "";
+            if (report.getVisits() != null && !report.getVisits().isEmpty()) {
+                monthSuffix = "_" + report.getVisits().get(0).getVisitMonth() + "월";
+            } else if (report.getInspectMonth() != null && report.getInspectMonth().length() >= 7) {
+                monthSuffix = "_" + Integer.parseInt(report.getInspectMonth().substring(5)) + "월";
+            }
+            String filename = (report.getDocTitle() != null ? report.getDocTitle() : "점검내역서") + monthSuffix + ".pdf";
+            String encoded = java.net.URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encoded)
+                    .body(pdf);
+        } catch (Exception e) {
+            log.error("점검내역서 PDF 생성 실패: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /** GET /document/inspect-detail/{reportId} - 점검내역서 상세 정보 */
+    @GetMapping("/inspect-detail/{reportId}")
+    public String inspectDetail(@PathVariable Long reportId, Model model) {
+        try {
+            InspectReportDTO report = inspectReportService.findById(reportId);
+            model.addAttribute("report", report);
+
+            // 점검결과를 섹션별로 분리하여 모델에 추가
+            if (report.getCheckResults() != null) {
+                model.addAttribute("dbItems", report.getCheckResults().stream().filter(r -> "DB".equals(r.getSection())).toList());
+                model.addAttribute("apItems", report.getCheckResults().stream().filter(r -> "AP".equals(r.getSection())).toList());
+                model.addAttribute("dbmsItems", report.getCheckResults().stream().filter(r -> "DBMS".equals(r.getSection())).toList());
+                model.addAttribute("gisItems", report.getCheckResults().stream().filter(r -> "GIS".equals(r.getSection())).toList());
+                model.addAttribute("appItems", report.getCheckResults().stream().filter(r -> "APP".equals(r.getSection())).toList());
+                model.addAttribute("dbUsage", report.getCheckResults().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList());
+                model.addAttribute("apUsage", report.getCheckResults().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList());
+                model.addAttribute("dbmsEtc", report.getCheckResults().stream().filter(r -> "DBMS_ETC".equals(r.getSection())).toList());
+            }
+
+            var project = swProjectRepository.findById(report.getPjtId()).orElse(null);
+            model.addAttribute("project", project);
+
+            if (project != null) {
+                var infraList = infraRepository.findByDistNmAndSysNmEn(
+                        project.getDistNm(), project.getSysNmEn());
+                model.addAttribute("infraList", infraList);
+            }
+
+            return "document/inspect-detail";
+        } catch (Exception e) {
+            log.error("점검내역서 상세 조회 실패: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "점검내역서를 찾을 수 없습니다.");
+            return "redirect:/document/list";
+        }
+    }
+
+    /** GET /document/inspect-preview/{reportId} - 점검내역서 미리보기 */
+    @GetMapping("/inspect-preview/{reportId}")
+    public String inspectPreview(@PathVariable Long reportId, Model model) {
+        try {
+            InspectReportDTO report = inspectReportService.findById(reportId);
+            model.addAttribute("report", report);
+
+            // 점검결과를 섹션별로 분리하여 모델에 추가
+            if (report.getCheckResults() != null) {
+                model.addAttribute("dbItems", report.getCheckResults().stream().filter(r -> "DB".equals(r.getSection())).toList());
+                model.addAttribute("apItems", report.getCheckResults().stream().filter(r -> "AP".equals(r.getSection())).toList());
+                model.addAttribute("dbmsItems", report.getCheckResults().stream().filter(r -> "DBMS".equals(r.getSection())).toList());
+                model.addAttribute("gisItems", report.getCheckResults().stream().filter(r -> "GIS".equals(r.getSection())).toList());
+                model.addAttribute("appItems", report.getCheckResults().stream().filter(r -> "APP".equals(r.getSection())).toList());
+                model.addAttribute("dbUsage", report.getCheckResults().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList());
+                model.addAttribute("apUsage", report.getCheckResults().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList());
+                model.addAttribute("dbmsEtc", report.getCheckResults().stream().filter(r -> "DBMS_ETC".equals(r.getSection())).toList());
+            }
+
+            // 프로젝트 정보
+            var project = swProjectRepository.findById(report.getPjtId()).orElse(null);
+            model.addAttribute("project", project);
+
+            // 인프라 서버 정보
+            if (project != null) {
+                var infraList = infraRepository.findByDistNmAndSysNmEn(
+                        project.getDistNm(), project.getSysNmEn());
+                model.addAttribute("infraList", infraList);
+            }
+
+            // 점검 템플릿 (섹션별 그룹핑용)
+            String templateType = report.getSysType() != null ? report.getSysType() : "UPIS";
+            List<InspectCheckResultDTO> templateItems = inspectReportService.getTemplateItems(templateType);
+            model.addAttribute("templateItems", templateItems);
+
+            return "document/inspect-preview";
+        } catch (Exception e) {
+            log.error("점검내역서 미리보기 실패: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "점검내역서를 찾을 수 없습니다.");
+            return "redirect:/document/list";
+        }
     }
 }

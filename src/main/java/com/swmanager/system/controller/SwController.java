@@ -383,4 +383,5 @@ public class SwController {
         log.info("장비 목록 저장 - projId: {}, 건수: {}", projId, items.size());
         return ResponseEntity.ok(Map.of("success", true, "count", items.size()));
     }
+
 }

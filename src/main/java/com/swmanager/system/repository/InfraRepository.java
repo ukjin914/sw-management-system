@@ -10,6 +10,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InfraRepository extends JpaRepository<Infra, Long> {
+
+    /** 시군구 + 시스템영문명으로 인프라 조회 (점검내역서용) */
+    @Query("SELECT i FROM Infra i WHERE i.distNm = :distNm AND i.sysNmEn = :sysNmEn")
+    java.util.List<Infra> findByDistNmAndSysNmEn(@Param("distNm") String distNm, @Param("sysNmEn") String sysNmEn);
     
     // [수정됨] 통합 검색 쿼리
     // 1. infraType(운영/테스트)은 정확히 일치해야 함

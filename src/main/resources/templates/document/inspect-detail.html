@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>점검내역서 상세</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions { display: flex; gap: 8px; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-edit { background: #4e73df; color: white; }
+        .btn-pdf { background: #e74a3b; color: white; }
+        .btn-preview { background: #36b9cc; color: white; }
+        .btn-back { background: #858796; color: white; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.78em; font-weight: 600; color: white; margin-left: 10px; }
+        .badge-completed { background: #1cc88a; }
+        .badge-draft { background: #f6c23e; color: #333; }
+
+        .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .card-title { font-size: 1em; font-weight: 700; color: #1a237e; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8eaf6; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 30px; }
+        .info-item { display: flex; gap: 10px; }
+        .info-label { font-weight: 600; color: #5a5c69; min-width: 90px; font-size: 0.88em; }
+        .info-value { font-size: 0.88em; }
+
+        .section-header { background: #1a237e; color: white; padding: 8px 14px; font-weight: 700; font-size: 0.92em; margin-top: 0; border-radius: 4px 4px 0 0; }
+        table.dt { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
+        table.dt th, table.dt td { padding: 7px 10px; border: 1px solid #ddd; }
+        table.dt thead th { background: #e8eaf6; color: #1a237e; font-weight: 700; text-align: center; }
+        table.dt .cat { background: #f8f9fc; font-weight: 600; text-align: center; }
+        .result-ok { color: #155724; font-weight: 700; }
+        .result-check { color: #856404; font-weight: 700; }
+
+        .sub-header { font-weight: 700; font-size: 0.9em; margin: 14px 0 6px; padding-left: 8px; border-left: 3px solid #4caf50; }
+        table.spec { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-bottom: 10px; }
+        table.spec th, table.spec td { padding: 7px 10px; border: 1px solid #ddd; }
+        table.spec th { background: #f8f9fc; font-weight: 600; width: 110px; }
+
+        .usage-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 10px; }
+        .usage-table th, .usage-table td { padding: 6px 10px; border: 1px solid #ddd; }
+        .usage-table th { background: #e3f2fd; font-weight: 600; text-align: left; }
+
+        .sign-area { display: flex; gap: 30px; margin-top: 10px; }
+        .sign-box { text-align: center; }
+        .sign-box label { display: block; font-weight: 600; color: #5a5c69; font-size: 0.85em; margin-bottom: 6px; }
+        .sign-box img { max-width: 180px; max-height: 80px; border: 1px solid #ddd; border-radius: 4px; padding: 4px; background: white; }
+        .sign-none { color: #aaa; font-size: 0.82em; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div th:if="${errorMessage}" class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span></div>
+
+        <div class="page-header">
+            <h2>
+                <i class="fas fa-clipboard-check"></i> 점검내역서 상세
+                <span th:class="'badge badge-' + ${#strings.toLowerCase(report.status)}"
+                      th:text="${report.status == 'COMPLETED' ? '작성완료' : '임시저장'}"></span>
+            </h2>
+            <div class="header-actions">
+                <a th:href="@{'/document/create?docType=INSPECT&reportId=' + ${report.id}}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
+                <a th:href="@{'/document/inspect-preview/' + ${report.id}}" class="btn-preview"><i class="fas fa-eye"></i> 미리보기</a>
+                <a th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-file-pdf"></i> PDF 다운로드</a>
+                <a href="/document/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>
+            </div>
+        </div>
+
+        <!-- 기본 정보 -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-info-circle"></i> 기본 정보</div>
+            <div class="info-grid">
+                <div class="info-item"><span class="info-label">사업명</span><span class="info-value" th:text="${project?.projNm} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">점검월</span><span class="info-value" th:text="${report.inspectMonth} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">시스템유형</span><span class="info-value" th:text="${report.sysType} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">문서제목</span><span class="info-value" th:text="${report.docTitle} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">점검업체</span><span class="info-value" th:text="${report.inspCompany} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">점검자</span><span class="info-value" th:text="${report.inspName} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">확인기관</span><span class="info-value" th:text="${report.confOrg} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">확인자</span><span class="info-value" th:text="${report.confName} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">작성자</span><span class="info-value" th:text="${report.createdBy} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">작성일</span><span class="info-value" th:text="${report.createdAt != null ? #strings.substring(report.createdAt.toString(), 0, 16) : '-'}"></span></div>
+            </div>
+
+            <!-- 서명 -->
+            <div class="sign-area">
+                <div class="sign-box">
+                    <label>점검자 서명</label>
+                    <span th:if="${report.inspSign != null and !report.inspSign.isEmpty()}"><img th:src="${report.inspSign}" alt="점검자서명"/></span>
+                    <span th:if="${report.inspSign == null or report.inspSign.isEmpty()}" class="sign-none">서명 없음</span>
+                </div>
+                <div class="sign-box">
+                    <label>확인자 서명</label>
+                    <span th:if="${report.confSign != null and !report.confSign.isEmpty()}"><img th:src="${report.confSign}" alt="확인자서명"/></span>
+                    <span th:if="${report.confSign == null or report.confSign.isEmpty()}" class="sign-none">서명 없음</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 방문이력 -->
+        <div class="card">
+            <div class="section-header">1. 월별 점검 및 장애조치 이력 요약</div>
+            <table class="dt">
+                <thead><tr><th style="width:50px;">년도</th><th style="width:35px;">월</th><th style="width:35px;">일</th><th>업무</th><th>증상</th><th>조치내용</th></tr></thead>
+                <tbody>
+                    <tr th:each="v : ${report.visits}">
+                        <td th:text="${v.visitYear}"></td><td th:text="${v.visitMonth}"></td><td th:text="${v.visitDay}"></td>
+                        <td th:text="${v.task}"></td><td th:text="${v.symptom}"></td><td th:text="${v.action}"></td>
+                    </tr>
+                    <tr th:if="${report.visits == null or report.visits.isEmpty()}"><td colspan="6" style="text-align:center;color:#999;">방문이력 없음</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 점검대상 -->
+        <th:block th:if="${report.sysType == 'UPIS' and infraList != null}">
+            <div class="card">
+                <div class="section-header">2. 점검 대상</div>
+                <th:block th:each="infra : ${infraList}">
+                    <th:block th:each="srv : ${infra.servers}">
+                        <div class="sub-header" th:text="'■ ' + ${srv.serverType != null ? (srv.serverType == 'DB' ? 'DB 서버' : 'AP 서버') : 'Server'}"></div>
+                        <table class="spec">
+                            <tr><th>제품명</th><td th:text="${srv.serverModel}"></td></tr>
+                            <tr><th>CPU</th><td th:text="${srv.cpuSpec}"></td></tr>
+                            <tr><th>메모리</th><td th:text="${srv.memorySpec}"></td></tr>
+                            <tr><th>디스크</th><td th:text="${srv.diskSpec}"></td></tr>
+                            <tr><th>네트워크</th><td th:text="${srv.networkSpec}"></td></tr>
+                            <tr><th>전원</th><td th:text="${srv.powerSpec}"></td></tr>
+                            <tr><th>운영체제</th><td th:text="${srv.osDetail}"></td></tr>
+                        </table>
+                    </th:block>
+                </th:block>
+                <div class="sub-header">■ 소프트웨어</div>
+                <table class="spec">
+                    <tr><th>DBMS</th><td th:text="${report.inspDbms}"></td></tr>
+                    <tr><th>GIS 엔진</th><td th:text="${report.inspGis}"></td></tr>
+                </table>
+            </div>
+        </th:block>
+
+        <!-- 점검결과 -->
+
+            <!-- DB 서버 -->
+            <th:block th:if="${dbItems != null and !dbItems.isEmpty()}">
+                <div class="card">
+                    <div class="section-header">3. UPIS DB 서버 점검결과</div>
+                    <table class="dt">
+                        <thead><tr><th style="width:70px;">구분</th><th>점검 항목</th><th>수행 명령/방법</th><th style="width:70px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${dbItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- DB 사용율 -->
+                    <th:block th:if="${dbUsage != null and !dbUsage.isEmpty()}">
+                        <table class="usage-table">
+                            <thead><tr><th colspan="6">사용율</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${dbUsage}">
+                                    <td th:text="${u.category}"></td><td th:text="${u.result}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </th:block>
+                </div>
+            </th:block>
+
+            <!-- AP 서버 -->
+            <th:block th:if="${apItems != null and !apItems.isEmpty()}">
+                <div class="card">
+                    <div class="section-header">4. UPIS AP 서버 점검결과</div>
+                    <table class="dt">
+                        <thead><tr><th style="width:50px;">종류</th><th>점검 항목</th><th>점검 내용</th><th>점검 기준</th><th style="width:70px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${apItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod != null ? item.itemMethod.split('\\|\\|')[0] : ''}"></td>
+                                <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? item.itemMethod.split('\\|\\|')[1] : ''}"></td>
+                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- AP 사용율 -->
+                    <th:block th:if="${apUsage != null and !apUsage.isEmpty()}">
+                        <table class="usage-table">
+                            <thead><tr><th colspan="4">사용율</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${apUsage}">
+                                    <td th:text="${u.category}"></td><td th:text="${u.result}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </th:block>
+                </div>
+            </th:block>
+
+            <!-- DBMS -->
+            <th:block th:if="${dbmsItems != null and !dbmsItems.isEmpty()}">
+                <div class="card">
+                    <div class="section-header">5. DBMS (Oracle) 점검결과</div>
+                    <table class="dt">
+                        <thead><tr><th style="width:50px;">종류</th><th>점검 항목</th><th>수행 명령/쿼리</th><th style="width:70px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${dbmsItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- DBMS 기타 -->
+                    <th:block th:if="${dbmsEtc != null and !dbmsEtc.isEmpty()}">
+                        <table class="usage-table">
+                            <thead><tr><th>기타</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${dbmsEtc}"><td th:text="${u.result}"></td></tr>
+                            </tbody>
+                        </table>
+                    </th:block>
+                </div>
+            </th:block>
+
+            <!-- GIS -->
+            <th:block th:if="${gisItems != null and !gisItems.isEmpty()}">
+                <div class="card">
+                    <div class="section-header" th:text="${report.sysType != null and report.sysType == 'KRAS' ? '1. GIS 엔진 점검결과' : '6. GIS 엔진 점검결과'}"></div>
+                    <table class="dt" th:if="${report.sysType == null or report.sysType != 'KRAS'}">
+                        <thead><tr><th style="width:130px;">대상</th><th>점검 항목</th><th>점검 내용 및 방법</th><th style="width:70px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${gisItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="dt" th:if="${report.sysType != null and report.sysType == 'KRAS'}">
+                        <thead><tr><th style="width:130px;">대상</th><th>점검 내용 및 방법</th><th style="width:70px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${gisItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </th:block>
+
+            <!-- APP -->
+            <th:block th:if="${appItems != null and !appItems.isEmpty()}">
+                <div class="card">
+                    <div class="section-header" th:text="${report.sysType != null and report.sysType == 'KRAS' ? '2. 표준시스템 점검결과' : '7. 표준시스템 점검결과'}"></div>
+                    <table class="dt">
+                        <thead><tr><th style="width:80px;">대분류</th><th>중분류</th><th>점검 내용</th><th style="width:70px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${appItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </th:block>
+
+    </div>
+</body>
+</html>

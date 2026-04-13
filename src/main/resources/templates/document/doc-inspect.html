@@ -2,301 +2,1404 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>점검내역서 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
-        .container { max-width: 1100px; margin: auto; }
+        .container { max-width: 1200px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
         .btn-save { background: #1cc88a; color: white; }
+        .btn-load { background: #4e73df; color: white; }
         .btn-cancel { background: #858796; color: white; }
+        .draft-indicator { font-size: 0.75em; color: #e74a3b; margin-left: 12px; display: none; }
+        .draft-indicator.saved { color: #1cc88a; }
 
-        /* 탭 네비 */
         .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
+        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; transition: 0.2s; }
         .tab-nav button.active { background: white; color: #1565c0; border-bottom-color: #1565c0; }
 
-        /* 섹션 */
         .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-section.active { display: block; }
-        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+        .section-title { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+        .sub-title { margin: 24px 0 12px; font-weight: 700; font-size: 0.9em; color: #333; border-left: 3px solid #4caf50; padding-left: 8px; }
 
-        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
         .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
-        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
-        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
-        .form-table textarea { height: auto; }
-        .form-table textarea { height: 80px; resize: vertical; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 140px; white-space: nowrap; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; box-sizing: border-box; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .form-table input[readonly] { background: #f8f9fc; color: #666; }
         .required { color: #e74a3b; }
-        .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
 
-        /* 동적 행 */
-        .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
-        .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
-        .dynamic-table input, .dynamic-table select, .dynamic-table textarea { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
-        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .check-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
+        .check-table th, .check-table td { padding: 8px 10px; border: 1px solid #e3e6f0; }
+        .check-table thead th { background: #e8eaf6; color: #283593; font-weight: 700; text-align: center; }
+        .check-table tbody td { vertical-align: middle; }
+        .check-table .cat-cell { background: #f8f9fc; font-weight: 600; text-align: center; white-space: nowrap; }
+
+        .result-cell { text-align: center; white-space: nowrap; }
+        .result-cell label { margin: 0 6px; cursor: pointer; font-size: 0.92em; }
+        .result-cell input[type="checkbox"] { margin-right: 2px; cursor: pointer; transform: scale(1.1); vertical-align: middle; }
+
+        .server-card { border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+        .server-card.db { background: #e8f5e9; border-left: 4px solid #4caf50; }
+        .server-card.ap { background: #e3f2fd; border-left: 4px solid #2196f3; }
+        .server-card h4 { margin: 0 0 8px; font-size: 0.92em; }
+        .server-card .spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; font-size: 0.83em; color: #555; }
+
+        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-top: 6px; }
         .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
-        .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
-        .checkbox-cell { text-align: center; }
-        .checkbox-cell input[type="checkbox"] { width: auto; }
+        .report-list-modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; }
+        .report-list-content { background:white; margin:80px auto; max-width:700px; border-radius:12px; padding:24px; max-height:70vh; overflow-y:auto; }
+        .report-list-content h3 { margin:0 0 16px; color:#1565c0; }
+        .report-item { padding:12px; border:1px solid #e3e6f0; border-radius:6px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+        .report-item:hover { background:#f0f4ff; }
+        .report-item .info { font-size:0.88em; }
+        .report-item .status { font-size:0.75em; padding:3px 8px; border-radius:10px; }
+        .report-item .status.draft { background:#fff3cd; color:#856404; }
+        .report-item .status.completed { background:#d4edda; color:#155724; }
+        .type-badge { font-size: 0.72em; padding: 2px 8px; border-radius: 10px; background: #e8eaf6; color: #283593; margin-left: 8px; font-weight: 600; }
+
+        .sign-box { flex:1; min-width:280px; }
+        .sign-label { font-weight:700; font-size:0.88em; color:#333; margin-bottom:6px; }
+        .sign-canvas-wrap { position:relative; display:inline-block; border:2px solid #d1d3e2; border-radius:8px; background:#fff; }
+        .sign-canvas-wrap canvas { display:block; border-radius:6px; cursor:crosshair; touch-action:none; }
+        .sign-clear-btn { position:absolute; top:6px; right:6px; background:rgba(231,74,59,0.85); color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:0.75em; cursor:pointer; }
+        .sign-clear-btn:hover { background:#e74a3b; }
+        .sign-step-card { background:#fff; border-radius:12px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.1); margin-bottom:16px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="page-header">
-            <h2><i class="fas fa-file-contract"></i> 점검내역서 작성</h2>
-            <div class="header-actions">
-                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
-                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
-            </div>
+<div class="container">
+    <div class="page-header">
+        <div style="display:flex;align-items:center;">
+            <h2><i class="fas fa-clipboard-check"></i> 점검내역서 작성</h2>
+            <span class="draft-indicator" id="draftIndicator"><i class="fas fa-circle"></i> 자동저장됨</span>
         </div>
-
-        <!-- 3종 탭 -->
-        <div class="tab-nav">
-            <button class="active" onclick="showSection(0, this)">① 표지</button>
-            <button onclick="showSection(1, this)">② 점검리포트</button>
-            <button onclick="showSection(2, this)">③ 정기점검상세</button>
-        </div>
-
-        <!-- ① 표지 -->
-        <div class="form-section active" id="section-0">
-            <h3><i class="fas fa-file-alt"></i> ① 표지</h3>
-            <table class="form-table">
-                <tr><th>지자체 <span class="required">*</span></th>
-                    <td colspan="3">
-                        <select id="infraId" onchange="loadInfraInfo()">
-                            <option value="">선택</option>
-                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
-                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
-                                    th:selected="${infra.infraId == infraId}"
-                                    th:data-city="${infra.cityNm}" th:data-dist="${infra.distNm}" th:data-sys="${infra.sysNm}"></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr><th>용역명</th><td colspan="3"><input type="text" id="cover_name" placeholder="용역명 (자동입력)"></td></tr>
-                <tr><th>시스템유형 <span class="required">*</span></th>
-                    <td><select id="sys_type" onchange="updateCoverTitle()">
-                        <option value="">선택</option>
-                        <option value="UPIS">UPIS</option>
-                        <option value="KRAS">KRAS</option>
-                        <option value="IPSS">IPSS</option>
-                    </select></td>
-                    <th>문서제목</th><td><input type="text" id="cover_title" placeholder="시스템 유형에 따라 자동 생성" readonly style="background:#f0f0f0;"></td>
-                </tr>
-                <tr><th>점검년월</th><td><input type="month" id="cover_month"></td>
-                    <th>점검자 회사명</th><td><input type="text" id="cover_inspector_company" placeholder="회사명"></td></tr>
-                <tr><th>점검자 담당자</th><td><input type="text" id="cover_inspector_name" placeholder="담당자명"></td>
-                    <th>확인자 기관부서</th><td><input type="text" id="cover_approver_org" placeholder="기관 담당부서"></td></tr>
-                <tr><th>확인자 담당자</th><td><input type="text" id="cover_approver_name" placeholder="담당자명"></td></tr>
-            </table>
-        </div>
-
-        <!-- ② 점검리포트 -->
-        <div class="form-section" id="section-1">
-            <h3><i class="fas fa-clipboard-list"></i> ② 점검리포트</h3>
-            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">월별 점검 및 장애조치 이력</p>
-            <table class="dynamic-table" id="reportTable">
-                <thead><tr><th>년/월/일</th><th>업무</th><th>증상</th><th>조치내용</th><th></th></tr></thead>
-                <tbody id="reportBody">
-                    <tr>
-                        <td><input type="date"></td>
-                        <td><input type="text"></td>
-                        <td><input type="text"></td>
-                        <td><input type="text"></td>
-                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="btn-add-row" onclick="addReportRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
-
-            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">점검대상 시스템</p>
-            <table class="dynamic-table" id="targetTable">
-                <thead><tr><th>제품명</th><th>버전</th><th>수량</th><th>용도</th><th>설치일</th><th></th></tr></thead>
-                <tbody id="targetBody">
-                    <tr>
-                        <td><input type="text"></td>
-                        <td><input type="text"></td>
-                        <td><input type="number"></td>
-                        <td><input type="text"></td>
-                        <td><input type="date"></td>
-                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="btn-add-row" onclick="addTargetRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 제품 추가</button>
-
-            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">시스템구성도</p>
-            <table class="form-table">
-                <tr><th>구성도</th><td colspan="3"><textarea id="report_diagram" placeholder="시스템 구성도 설명 또는 이미지 링크"></textarea></td></tr>
-            </table>
-        </div>
-
-        <!-- ③ 정기점검상세 -->
-        <div class="form-section" id="section-2">
-            <h3><i class="fas fa-check-circle"></i> ③ 정기점검상세</h3>
-            <table class="form-table">
-                <tr><th>점검년월</th><td><input type="month" id="detail_month" placeholder="점검 대상 년월"></td></tr>
-            </table>
-
-            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">GIS SW 점검결과</p>
-            <table class="dynamic-table" id="detailTable">
-                <thead><tr><th>대상</th><th>점검내용 및 방법</th><th colspan="2">점검결과</th><th></th></tr></thead>
-                <tbody id="detailBody">
-                    <tr>
-                        <td><input type="text"></td>
-                        <td><input type="text"></td>
-                        <td class="checkbox-cell"><label><input type="checkbox" value="NORMAL"> 정상 ✓</label></td>
-                        <td class="checkbox-cell"><label><input type="checkbox" value="INSPECT"> 점검 ☐</label></td>
-                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="btn-add-row" onclick="addDetailRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
-
-            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">추가 점검 내역</p>
-            <table class="form-table">
-                <tr><th>비고</th><td colspan="3"><textarea id="detail_remarks" placeholder="추가 점검사항 또는 특이사항"></textarea></td></tr>
-            </table>
+        <div class="header-actions">
+            <button onclick="openReportList()" class="btn-load"><i class="fas fa-folder-open"></i> 불러오기</button>
+            <button onclick="saveReport('DRAFT')" class="btn-save" style="background:#f6c23e;color:#333;"><i class="fas fa-edit"></i> 임시저장</button>
+            <button onclick="saveReport('COMPLETED')" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+            <button onclick="openSignModal()" class="btn-save" style="background:#6f42c1;"><i class="fas fa-signature"></i> 서명 요청</button>
+            <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
         </div>
     </div>
 
-    <script>
-        function showSection(idx, btn) {
-            document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
-            document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
-            document.getElementById('section-' + idx).classList.add('active');
-            btn.classList.add('active');
+    <!-- 탭 -->
+    <div class="tab-nav" id="tabNav">
+        <button class="active" onclick="showTab(0, this)">① 표지</button>
+        <button onclick="showTab(1, this)">② 점검대상</button>
+        <button onclick="showTab(2, this)" id="tabServer" style="display:none;">③ 서버 점검결과</button>
+        <button onclick="showTab(3, this)" id="tabSw">③ SW 점검결과</button>
+    </div>
+
+    <!-- =========== ① 표지 =========== -->
+    <div class="form-section active" id="section-0">
+        <h3 class="section-title"><i class="fas fa-file-alt"></i> 표지</h3>
+        <input type="hidden" id="reportId" value="">
+        <input type="hidden" id="cover_sysType" value="">
+        <table class="form-table">
+            <tr><th>사업 선택 <span class="required">*</span></th>
+                <td colspan="3">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <select id="selYear" onchange="onYearChange()" style="width:auto;min-width:100px;"><option value="">연도</option></select>
+                        <select id="selCity" onchange="onCityChange()" style="width:auto;min-width:130px;"><option value="">-- 연도 먼저 선택 --</option></select>
+                        <select id="selDist" onchange="onDistChange()" style="width:auto;min-width:130px;"><option value="">-- 시도 먼저 선택 --</option></select>
+                        <select id="selSystem" onchange="onSystemChange()" style="width:auto;min-width:130px;"><option value="">-- 시군구 먼저 선택 --</option></select>
+                    </div>
+                </td>
+            </tr>
+            <tr><th>사업명</th>
+                <td colspan="3">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <select id="projId" onchange="loadProjectInfo()" style="flex:1;"><option value="">-- 위 조건을 선택하세요 --</option></select>
+                        <span id="projHint" style="font-size:0.78em;color:#999;white-space:nowrap;"></span>
+                    </div>
+                </td>
+            </tr>
+            <tr><th>용역명</th><td colspan="3"><input type="text" id="cover_projNm" readonly></td></tr>
+            <tr><th>사업기간</th><td><input type="text" id="cover_period" readonly></td>
+                <th>시스템유형</th>
+                <td><input type="text" id="cover_sysTypeDisplay" readonly style="background:#f8f9fc;font-weight:600;"></td>
+            </tr>
+            <tr><th>점검년월</th><td><input type="month" id="cover_month"></td>
+                <th>문서제목</th><td><input type="text" id="cover_title" readonly style="background:#f8f9fc;"></td></tr>
+            <tr><th>점검자 (회사)</th><td><input type="text" id="cover_inspCompany" value="(주)정도UIT"></td>
+                <th>점검자 (담당자)</th><td><input type="text" id="cover_inspName"></td></tr>
+            <tr><th>확인자 (기관)</th><td><input type="text" id="cover_confOrg"></td>
+                <th>확인자 (담당자)</th><td><input type="text" id="cover_confName"></td></tr>
+        </table>
+
+        <!-- 서명 영역 -->
+        <div style="display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;">
+            <div class="sign-box">
+                <div class="sign-label">점검자 서명 (인)</div>
+                <div class="sign-canvas-wrap">
+                    <canvas id="inspSignCanvas" width="320" height="140"></canvas>
+                    <button class="sign-clear-btn" onclick="clearSign('inspSignCanvas')" title="지우기"><i class="fas fa-eraser"></i></button>
+                </div>
+            </div>
+            <div class="sign-box">
+                <div class="sign-label">확인자 서명 (인)</div>
+                <div class="sign-canvas-wrap">
+                    <canvas id="confSignCanvas" width="320" height="140"></canvas>
+                    <button class="sign-clear-btn" onclick="clearSign('confSignCanvas')" title="지우기"><i class="fas fa-eraser"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sub-title">1. 월별 점검 및 장애조치 이력 요약</div>
+        <table class="check-table" id="visitTable">
+            <thead><tr><th style="width:60px;">년도</th><th style="width:40px;">월</th><th style="width:40px;">일</th><th>업무</th><th>증상</th><th>조치내용</th><th style="width:36px;"></th></tr></thead>
+            <tbody id="visitBody"></tbody>
+        </table>
+        <button class="btn-add-row" onclick="addVisitRow()"><i class="fas fa-plus"></i> 방문이력 추가</button>
+    </div>
+
+    <!-- =========== ② 점검대상 =========== -->
+    <div class="form-section" id="section-1">
+        <h3 class="section-title"><i class="fas fa-server"></i> 2. 점검대상</h3>
+
+        <!-- UPIS HW+SW: 서버 + 소프트웨어 -->
+        <div id="targetHW" style="display:none;">
+            <div class="sub-title">■ DB 서버</div>
+            <table class="form-table" id="targetDbTable">
+                <tr><th>제품명(M/T, S/N)</th><td id="target_db_model">-</td></tr>
+                <tr><th>CPU</th><td id="target_db_cpu">-</td></tr>
+                <tr><th>메모리</th><td id="target_db_memory">-</td></tr>
+                <tr><th>디스크</th><td id="target_db_disk">-</td></tr>
+                <tr><th>네트워크</th><td id="target_db_network">-</td></tr>
+                <tr><th>전원</th><td id="target_db_power">-</td></tr>
+                <tr><th>운영체제</th><td id="target_db_os">-</td></tr>
+            </table>
+
+            <div class="sub-title">■ AP 서버</div>
+            <table class="form-table" id="targetApTable">
+                <tr><th>제품명(M/T, S/N)</th><td id="target_ap_model">-</td></tr>
+                <tr><th>CPU</th><td id="target_ap_cpu">-</td></tr>
+                <tr><th>메모리</th><td id="target_ap_memory">-</td></tr>
+                <tr><th>디스크</th><td id="target_ap_disk">-</td></tr>
+                <tr><th>네트워크</th><td id="target_ap_network">-</td></tr>
+                <tr><th>전원</th><td id="target_ap_power">-</td></tr>
+                <tr><th>운영체제</th><td id="target_ap_os">-</td></tr>
+            </table>
+
+            <div class="sub-title">■ 소프트웨어</div>
+            <table class="check-table" id="targetSwTable">
+                <tbody>
+                    <tr><td class="cat-cell" style="width:160px;">DBMS</td><td id="target_sw_dbms">-</td></tr>
+                    <tr><td class="cat-cell">GIS 엔진</td><td id="target_sw_gis">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- UPIS_SW: 제품 테이블 (하드코딩) -->
+        <div id="targetSW" style="display:none;">
+            <table class="check-table">
+                <thead><tr><th>제품명</th><th>버전</th><th>수량</th><th>용도</th><th>설치일</th></tr></thead>
+                <tbody>
+                    <tr><td>GeoNURIS Spatial Server</td><td>3.0</td><td>1식</td><td>공간자료 저장 및 관리</td><td></td></tr>
+                    <tr><td>GeoNURIS GeoWeb Server</td><td>3.0</td><td>1식</td><td>웹 기반의 공간자료 서비스</td><td></td></tr>
+                    <tr><td>GeoNURIS Desktop Pro</td><td>3.0</td><td>1식</td><td>GIS 데이터 관리 및 모니터링</td><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- KRAS: 제품 테이블 (하드코딩, 버전 없음) -->
+        <div id="targetKRAS" style="display:none;">
+            <table class="check-table">
+                <thead><tr><th>제품명</th><th>수량</th><th>용도</th><th>설치일</th></tr></thead>
+                <tbody>
+                    <tr><td>GeoNURIS Spatial Server</td><td>1식</td><td>공간자료 저장 및 관리</td><td></td></tr>
+                    <tr><td>GeoNURIS GeoWeb Server</td><td>1식</td><td>웹 기반의 공간자료 서비스</td><td></td></tr>
+                    <tr><td>GeoNURIS Desktop Pro</td><td>1식</td><td>GIS 데이터 관리 및 모니터링</td><td></td></tr>
+                    <tr><td>KRAS 공용인터페이스</td><td>1식</td><td>측량성과프로그램</td><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="sub-title">■ 시스템 구성도</div>
+        <div style="border:2px dashed #ccc;border-radius:8px;padding:30px;text-align:center;color:#999;font-size:0.85em;" id="diagramArea">
+            시스템유형 선택 시 기본 구성도가 표시됩니다.
+        </div>
+    </div>
+
+    <!-- =========== ③ 서버 점검결과 (UPIS HW+SW 전용) =========== -->
+    <div class="form-section" id="section-2">
+        <h3 class="section-title"><i class="fas fa-hdd"></i> 서버 점검결과</h3>
+
+        <!-- DB서버 점검결과 -->
+        <div class="sub-title" id="dbCheckTitle">3. UPIS DB 서버 점검결과</div>
+        <table class="form-table" style="margin-bottom:12px;">
+            <tr><th>장비명</th><td id="db_serverName">-</td><th>운영체제</th><td id="db_os">-</td></tr>
+            <tr><th>호스트명</th><td id="db_hostName">-</td><th>사용용도</th><td id="db_purpose">UPIS DB 서버</td></tr>
+        </table>
+        <table class="check-table" id="dbCheckTable">
+            <thead><tr><th style="width:90px;">구분</th><th>점검 항목</th><th>수행 명령/방법</th><th style="width:140px;">결과</th></tr></thead>
+            <tbody id="dbCheckBody"></tbody>
+        </table>
+        <!-- DB 사용율 -->
+        <table class="check-table" style="margin-top:0;">
+            <thead><tr><th colspan="6" style="background:#e3f2fd;text-align:left;font-weight:bold;">사용율</th></tr></thead>
+            <tbody>
+                <tr><td style="width:14%;">CPU</td><td style="width:19%;"><input type="text" id="db_usage_cpu"></td>
+                    <td style="width:14%;">Memory</td><td style="width:19%;"><input type="text" id="db_usage_memory"></td>
+                    <td style="width:14%;">/</td><td style="width:19%;"><input type="text" id="db_usage_root"></td></tr>
+                <tr><td>/backup</td><td><input type="text" id="db_usage_backup"></td>
+                    <td>oracle</td><td><input type="text" id="db_usage_oracle"></td>
+                    <td>Oradata</td><td><input type="text" id="db_usage_oradata"></td></tr>
+                <tr><td>archive</td><td><input type="text" id="db_usage_archive"></td>
+                    <td colspan="4"></td></tr>
+            </tbody>
+        </table>
+
+        <!-- AP서버 점검결과 (5칼럼: 종류/점검항목/점검내용/점검기준/결과) -->
+        <div class="sub-title" style="margin-top:30px;" id="apCheckTitle">4. UPIS AP 서버 점검결과</div>
+        <table class="form-table" style="margin-bottom:12px;">
+            <tr><th>장비명</th><td id="ap_serverName">-</td><th>운영체제</th><td id="ap_os">-</td></tr>
+            <tr><th>CPU</th><td id="ap_cpu">-</td><th>Memory</th><td id="ap_memory">-</td></tr>
+            <tr><th>Disk</th><td id="ap_disk">-</td><th>사용용도</th><td id="ap_purpose">UPIS AP 서버</td></tr>
+        </table>
+        <table class="check-table" id="apCheckTable">
+            <thead><tr><th style="width:70px;">종류</th><th>점검 항목</th><th>점검 내용</th><th>점검 기준</th><th style="width:140px;">결과</th></tr></thead>
+            <tbody id="apCheckBody"></tbody>
+        </table>
+        <!-- AP 사용율 -->
+        <table class="check-table" style="margin-top:0;">
+            <thead><tr><th colspan="4" style="background:#e3f2fd;text-align:left;font-weight:bold;">사용율</th></tr></thead>
+            <tbody>
+                <tr><td style="width:14%;">CPU</td><td style="width:36%;"><input type="text" id="ap_usage_cpu"></td>
+                    <td style="width:14%;">Disk C:</td><td style="width:36%;"><input type="text" id="ap_usage_diskC"></td></tr>
+                <tr><td>Memory</td><td><input type="text" id="ap_usage_memory"></td>
+                    <td>Disk D:</td><td><input type="text" id="ap_usage_diskD"></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- =========== SW 점검결과 =========== -->
+    <div class="form-section" id="section-3">
+        <h3 class="section-title"><i class="fas fa-database"></i> SW 점검결과</h3>
+
+        <!-- DBMS (Oracle) 점검결과 (UPIS HW+SW 전용) -->
+        <div id="dbmsSection">
+            <div class="sub-title" id="dbmsCheckTitle">5. DBMS (Oracle) 점검결과</div>
+            <table class="form-table" style="margin-bottom:12px;">
+                <tr><th>점검대상</th><td id="dbms_target">UPIS DB</td><th>운영체제</th><td id="dbms_os">-</td></tr>
+                <tr><th>소프트웨어</th><td id="dbms_sw">Oracle</td><th>서버 IP</th><td><input type="text" id="dbms_ip" placeholder="서버 IP"></td></tr>
+            </table>
+            <table class="check-table" id="dbmsCheckTable">
+                <thead><tr><th style="width:70px;">종류</th><th>점검 항목</th><th>수행 명령/쿼리</th><th style="width:140px;">결과</th></tr></thead>
+                <tbody id="dbmsCheckBody"></tbody>
+            </table>
+            <!-- DBMS 기타 -->
+            <table class="check-table" style="margin-top:0;">
+                <thead><tr><th colspan="1" style="background:#e3f2fd;text-align:left;font-weight:bold;">기타</th></tr></thead>
+                <tbody>
+                    <tr><td><textarea id="dbms_etc" rows="4" style="width:100%;border:none;resize:vertical;" placeholder="기타 사항 입력"></textarea></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- GIS 엔진 점검결과 -->
+        <div class="sub-title" id="gisTitle">GIS 엔진 점검결과</div>
+        <table class="check-table" id="gisCheckTable">
+            <!-- 헤더는 동적으로 변경됨 (UPIS: 4칼럼, KRAS: 3칼럼) -->
+            <thead id="gisCheckHead"><tr><th style="width:180px;">대상</th><th>점검 항목</th><th>점검 내용 및 방법</th><th style="width:140px;">결과</th></tr></thead>
+            <tbody id="gisCheckBody"></tbody>
+        </table>
+
+        <!-- 표준시스템 점검결과 (UPIS/UPIS_SW) -->
+        <div class="sub-title" id="appTitle" style="margin-top:30px;">표준시스템 점검결과</div>
+        <table class="check-table" id="appCheckTable">
+            <thead><tr><th style="width:100px;">대분류</th><th style="width:100px;">중분류</th><th>점검 내용</th><th style="width:140px;">결과</th></tr></thead>
+            <tbody id="appCheckBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 서명 요청 모달 (전체화면) -->
+<div id="signModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f7f6;z-index:2000;overflow-y:auto;">
+    <div style="max-width:600px;margin:0 auto;padding:30px 20px;">
+        <div style="text-align:center;margin-bottom:24px;">
+            <h2 style="color:#1565c0;margin:0 0 6px;"><i class="fas fa-signature"></i> 점검내역서 서명</h2>
+            <p style="color:#666;font-size:0.88em;margin:0;" id="signModalInfo"></p>
+        </div>
+
+        <!-- STEP 1: 점검자 서명 -->
+        <div id="signStep1" class="sign-step-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="margin:0;font-size:1em;color:#333;"><span style="background:#1cc88a;color:#fff;padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 1</span> 점검자 서명</h3>
+                <button onclick="clearSign('modalInspCanvas')" style="background:#e74a3b;color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
+            </div>
+            <div style="border:2px solid #1565c0;border-radius:10px;background:#fff;overflow:hidden;">
+                <canvas id="modalInspCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;"></canvas>
+            </div>
+            <div style="text-align:center;margin-top:16px;">
+                <button onclick="signStepNext()" style="background:#1565c0;color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-arrow-right"></i> 다음: 확인자 서명</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: 확인자 서명 -->
+        <div id="signStep2" class="sign-step-card" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="margin:0;font-size:1em;color:#333;"><span style="background:#f6c23e;color:#333;padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 2</span> 확인자 서명</h3>
+                <button onclick="clearSign('modalConfCanvas')" style="background:#e74a3b;color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
+            </div>
+            <p style="color:#666;font-size:0.85em;margin:0 0 10px;text-align:center;">확인자에게 태블릿을 전달하여 아래에 서명해주세요.</p>
+            <div style="border:2px solid #f6c23e;border-radius:10px;background:#fff;overflow:hidden;">
+                <canvas id="modalConfCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;"></canvas>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
+                <button onclick="signStepBack()" style="background:#858796;color:#fff;border:none;border-radius:6px;padding:12px 30px;font-size:0.95em;font-weight:600;cursor:pointer;"><i class="fas fa-arrow-left"></i> 이전</button>
+                <button onclick="signComplete()" style="background:#1cc88a;color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-check"></i> 서명 완료 및 저장</button>
+            </div>
+        </div>
+
+        <div style="text-align:center;margin-top:20px;">
+            <button onclick="closeSignModal()" style="background:none;border:none;color:#858796;font-size:0.88em;cursor:pointer;text-decoration:underline;">취소하고 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 불러오기 모달 -->
+<div class="report-list-modal" id="reportListModal" onclick="if(event.target===this)this.style.display='none'">
+    <div class="report-list-content">
+        <h3><i class="fas fa-folder-open"></i> 저장된 점검내역서</h3>
+        <div id="reportListBody"><div style="color:#999;">사업을 먼저 선택해주세요.</div></div>
+        <div style="text-align:right;margin-top:12px;">
+            <button onclick="document.getElementById('reportListModal').style.display='none'" class="btn-cancel" style="padding:6px 16px;border:none;border-radius:4px;cursor:pointer;">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// === 전역 상태 ===
+var CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.content;
+var CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.content;
+var currentTemplateType = '';
+var templateCache = {};
+var autoDraftTimer = null;
+var currentProjectData = null; // 프로젝트 정보 저장
+
+// === 서명 캔버스 초기화 ===
+function initSignCanvas(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var drawing = false;
+    var lastX = 0, lastY = 0;
+
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function getPos(e) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = canvas.width / rect.width;
+        var scaleY = canvas.height / rect.height;
+        if (e.touches) {
+            return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+        }
+        return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        drawing = true;
+        var pos = getPos(e);
+        lastX = pos.x; lastY = pos.y;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+    }
+    function moveDraw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        var pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        lastX = pos.x; lastY = pos.y;
+    }
+    function endDraw(e) {
+        if (drawing) { e.preventDefault(); drawing = false; }
+    }
+
+    // Pointer Events (stylus/touch/mouse 통합)
+    canvas.addEventListener('pointerdown', startDraw);
+    canvas.addEventListener('pointermove', moveDraw);
+    canvas.addEventListener('pointerup', endDraw);
+    canvas.addEventListener('pointerleave', endDraw);
+    canvas.addEventListener('pointercancel', endDraw);
+}
+
+function clearSign(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function getSignData(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return '';
+    var ctx = canvas.getContext('2d');
+    var pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (var i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] > 0) return canvas.toDataURL('image/png');
+    }
+    return '';
+}
+
+function loadSignData(canvasId, dataUrl) {
+    if (!dataUrl) return;
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var img = new Image();
+    img.onload = function() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+    img.src = dataUrl;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initSignCanvas('inspSignCanvas');
+    initSignCanvas('confSignCanvas');
+
+    // URL 파라미터에 reportId가 있으면 자동 로드
+    var urlParams = new URLSearchParams(window.location.search);
+    var autoReportId = urlParams.get('reportId');
+    if (autoReportId) {
+        setTimeout(function() { loadReport(parseInt(autoReportId)); }, 500);
+    }
+});
+
+// === 탭 전환 ===
+function showTab(idx, btn) {
+    document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('section-' + idx).classList.add('active');
+    btn.classList.add('active');
+}
+
+// === 4단계 사업 선택 ===
+(function() {
+    fetch('/document/api/project-years')
+        .then(function(r) { return r.json(); })
+        .then(function(years) {
+            var sel = document.getElementById('selYear');
+            years.forEach(function(y) {
+                var opt = document.createElement('option');
+                opt.value = y; opt.textContent = y + '년';
+                sel.appendChild(opt);
+            });
+        });
+    addVisitRow();
+})();
+
+function onYearChange() {
+    var year = document.getElementById('selYear').value;
+    resetSelect('selCity', '불러오는 중...');
+    resetSelect('selDist', '-- 시도 먼저 선택 --');
+    resetSelect('selSystem', '-- 시군구 먼저 선택 --');
+    resetSelect('projId', '-- 위 조건을 선택하세요 --');
+    document.getElementById('projHint').textContent = '';
+    if (!year) { resetSelect('selCity', '-- 연도 먼저 선택 --'); return; }
+    fetch('/document/api/project-cities?year=' + year)
+        .then(function(r) { return r.json(); })
+        .then(function(list) { fillSelect('selCity', list, '시도 선택'); });
+}
+function onCityChange() {
+    var year = document.getElementById('selYear').value;
+    var city = document.getElementById('selCity').value;
+    resetSelect('selDist', '불러오는 중...');
+    resetSelect('selSystem', '-- 시군구 먼저 선택 --');
+    resetSelect('projId', '-- 위 조건을 선택하세요 --');
+    document.getElementById('projHint').textContent = '';
+    if (!city) { resetSelect('selDist', '-- 시도 먼저 선택 --'); return; }
+    fetch('/document/api/project-districts?year=' + year + '&cityNm=' + encodeURIComponent(city))
+        .then(function(r) { return r.json(); })
+        .then(function(list) { fillSelect('selDist', list, '시군구 선택'); });
+}
+function onDistChange() {
+    var year = document.getElementById('selYear').value;
+    var city = document.getElementById('selCity').value;
+    var dist = document.getElementById('selDist').value;
+    resetSelect('selSystem', '불러오는 중...');
+    resetSelect('projId', '-- 위 조건을 선택하세요 --');
+    document.getElementById('projHint').textContent = '';
+    if (!dist) { resetSelect('selSystem', '-- 시군구 먼저 선택 --'); return; }
+    fetch('/document/api/project-systems?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist))
+        .then(function(r) { return r.json(); })
+        .then(function(list) { fillSelect('selSystem', list, '시스템 선택'); });
+}
+function onSystemChange() {
+    var year = document.getElementById('selYear').value;
+    var city = document.getElementById('selCity').value;
+    var dist = document.getElementById('selDist').value;
+    var sysNmEn = document.getElementById('selSystem').value;
+    if (!sysNmEn) { resetSelect('projId', '-- 위 조건을 선택하세요 --'); return; }
+    resetSelect('projId', '불러오는 중...');
+    fetch('/document/api/projects?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist) + '&sysNmEn=' + encodeURIComponent(sysNmEn))
+        .then(function(r) { return r.json(); })
+        .then(function(list) {
+            var sel = document.getElementById('projId');
+            sel.innerHTML = '<option value="">사업 선택</option>';
+            if (list.length === 0) { sel.innerHTML = '<option value="">해당 조건의 사업이 없습니다</option>'; return; }
+            document.getElementById('projHint').textContent = list.length + '건';
+            list.forEach(function(p) {
+                var o = document.createElement('option');
+                o.value = p.projId;
+                o.textContent = (p.projNm || p.sysNm || '') + (p.contAmt ? ' (' + Number(p.contAmt).toLocaleString() + '원)' : '');
+                sel.appendChild(o);
+            });
+            if (list.length === 1) { sel.selectedIndex = 1; loadProjectInfo(); }
+        });
+}
+
+function resetSelect(id, text) { document.getElementById(id).innerHTML = '<option value="">' + text + '</option>'; }
+function fillSelect(id, list, label) {
+    var sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">' + label + '</option>';
+    list.forEach(function(v) { var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+}
+
+// === 시스템유형 자동 결정 ===
+function determineSysType(sysNmEn, swAmt, hwAmt) {
+    var sys = (sysNmEn || '').toUpperCase();
+    if (sys.indexOf('KRAS') >= 0) return 'KRAS';
+    if (sys.indexOf('UPIS') >= 0) {
+        if (hwAmt && hwAmt > 0) return 'UPIS';      // HW+SW
+        return 'UPIS_SW';                              // SW only
+    }
+    if (sys.indexOf('IPSS') >= 0) return 'IPSS';
+    return 'ETC';
+}
+
+function getSysTypeLabel(sysType) {
+    switch(sysType) {
+        case 'UPIS': return 'UPIS (HW+SW)';
+        case 'UPIS_SW': return 'UPIS (SW전용)';
+        case 'KRAS': return 'KRAS';
+        case 'IPSS': return 'IPSS';
+        default: return sysType || '미정';
+    }
+}
+
+// === 사업 선택 시 자동 로드 ===
+function loadProjectInfo() {
+    var projId = document.getElementById('projId').value;
+    if (!projId) return;
+    document.getElementById('reportId').value = '';
+
+    // 두 API를 병렬 호출: projects/api와 document/api/project
+    var distNm = document.getElementById('selDist').value;
+    var sysNmEn = document.getElementById('selSystem').value;
+
+    // SwController API (SwProjectDTO - hwAmt 포함)
+    fetch('/projects/api/' + projId)
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            var p = res.data || res;
+            currentProjectData = p;
+            document.getElementById('cover_projNm').value = p.projNm || '';
+            document.getElementById('cover_period').value = (p.startDt || '') + ' ~ ' + (p.endDt || '');
+            document.getElementById('cover_confOrg').value = p.orgNm || '';
+
+            // 시스템유형 자동 결정
+            var sysType = determineSysType(p.sysNmEn || sysNmEn, p.swAmt, p.hwAmt);
+            document.getElementById('cover_sysType').value = sysType;
+            document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(sysType);
+            onSysTypeChange();
+        });
+
+    // 서버정보 + 소프트웨어 자동 로드
+    if (distNm && sysNmEn) {
+        fetch('/document/api/infra-servers?distNm=' + encodeURIComponent(distNm) + '&sysNmEn=' + encodeURIComponent(sysNmEn))
+            .then(function(r) { return r.json(); })
+            .then(function(list) {
+                fillTargetHW(list);
+                fillServerCheckInfo(list);
+                fillSoftwareInfo(list);
+            })
+            .catch(function() {});
+    }
+
+    startAutoDraft();
+}
+
+// === 시스템유형 변경 → 탭/섹션 동적 표시 + 템플릿 로드 ===
+function onSysTypeChange() {
+    var sysType = document.getElementById('cover_sysType').value;
+    var tabServer = document.getElementById('tabServer');
+    var tabSw = document.getElementById('tabSw');
+    var dbmsSection = document.getElementById('dbmsSection');
+    var appTitle = document.getElementById('appTitle');
+    var appTable = document.getElementById('appCheckTable');
+    var targetHW = document.getElementById('targetHW');
+    var targetSW = document.getElementById('targetSW');
+    var targetKRAS = document.getElementById('targetKRAS');
+
+    // 점검대상 영역 초기화
+    targetHW.style.display = 'none';
+    targetSW.style.display = 'none';
+    targetKRAS.style.display = 'none';
+
+    if (sysType === 'UPIS') {
+        // UPIS HW+SW
+        tabServer.style.display = '';
+        tabServer.textContent = '③ 서버 점검결과';
+        tabSw.textContent = '④ SW 점검결과';
+        targetHW.style.display = '';
+        dbmsSection.style.display = '';
+        appTitle.textContent = '표준시스템 점검결과';
+        appTable.style.display = '';
+        // GIS 헤더: 4칼럼
+        updateGisHeader('UPIS');
+        // 번호 동적 업데이트
+        updateSectionNumbers('UPIS');
+    } else if (sysType === 'UPIS_SW') {
+        // UPIS SW전용
+        tabServer.style.display = 'none';
+        tabSw.textContent = '③ SW 점검결과';
+        targetSW.style.display = '';
+        dbmsSection.style.display = 'none';
+        appTitle.textContent = '표준시스템 점검결과';
+        appTable.style.display = '';
+        updateGisHeader('UPIS');
+        updateSectionNumbers('UPIS_SW');
+    } else if (sysType === 'KRAS') {
+        // KRAS
+        tabServer.style.display = 'none';
+        tabSw.textContent = '③ SW 점검결과';
+        targetKRAS.style.display = '';
+        dbmsSection.style.display = 'none';
+        appTitle.textContent = '';
+        appTable.style.display = 'none';
+        updateGisHeader('KRAS');
+        updateSectionNumbers('KRAS');
+    } else {
+        tabServer.style.display = 'none';
+        tabSw.textContent = '③ SW 점검결과';
+        dbmsSection.style.display = '';
+        appTitle.textContent = '표준시스템 점검결과';
+        appTable.style.display = '';
+        updateGisHeader('UPIS');
+    }
+
+    updateCoverTitle();
+    loadTemplateItems(sysType || 'UPIS');
+}
+
+function updateGisHeader(type) {
+    var head = document.getElementById('gisCheckHead');
+    if (type === 'KRAS') {
+        head.innerHTML = '<tr><th style="width:180px;">대상</th><th>점검 내용 및 방법</th><th style="width:140px;">결과</th></tr>';
+    } else {
+        head.innerHTML = '<tr><th style="width:180px;">대상</th><th>점검 항목</th><th>점검 내용 및 방법</th><th style="width:140px;">결과</th></tr>';
+    }
+}
+
+function updateSectionNumbers(type) {
+    if (type === 'UPIS') {
+        document.getElementById('dbCheckTitle').textContent = '3. UPIS DB 서버 점검결과';
+        document.getElementById('apCheckTitle').textContent = '4. UPIS AP 서버 점검결과';
+        document.getElementById('dbmsCheckTitle').textContent = '5. DBMS (Oracle) 점검결과';
+        document.getElementById('gisTitle').textContent = '6. GIS 엔진 점검결과';
+        document.getElementById('appTitle').textContent = '7. 표준시스템 점검결과';
+    } else if (type === 'UPIS_SW') {
+        document.getElementById('gisTitle').textContent = '1. GIS 엔진 점검결과';
+        document.getElementById('appTitle').textContent = '2. 표준시스템 점검결과';
+    } else if (type === 'KRAS') {
+        document.getElementById('gisTitle').textContent = '1. GIS 엔진 점검결과';
+    }
+}
+
+function updateCoverTitle() {
+    var projNm = document.getElementById('cover_projNm').value || '';
+    document.getElementById('cover_title').value = projNm ? projNm + ' 점검내역서' : '점검내역서';
+}
+
+// === 템플릿 항목 API 로드 ===
+function loadTemplateItems(templateType) {
+    if (currentTemplateType === templateType && templateCache[templateType]) return;
+    currentTemplateType = templateType;
+
+    fetch('/document/api/inspect-template?type=' + encodeURIComponent(templateType))
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            var items = resp.data || resp || [];
+            templateCache[templateType] = items;
+            renderAllCheckTables(items, templateType);
+        })
+        .catch(function() {
+            renderAllCheckTables([], templateType);
+        });
+}
+
+// === 점검항목 테이블 렌더링 ===
+function renderAllCheckTables(items, templateType) {
+    var sections = { DB: [], AP: [], DBMS: [], GIS: [], APP: [] };
+    items.forEach(function(item) {
+        if (sections[item.section]) sections[item.section].push(item);
+    });
+    // DB서버: 구분/점검 항목/수행 명령·방법/결과 (4칼럼)
+    renderCheckSection('dbCheckBody', sections.DB);
+    // AP서버: 종류/점검 항목/점검 내용/점검 기준/결과 (5칼럼, item_method="내용||기준")
+    renderApSection('apCheckBody', sections.AP);
+    // DBMS: 종류/점검 항목/수행 명령·쿼리/결과 (4칼럼)
+    renderCheckSection('dbmsCheckBody', sections.DBMS);
+    // GIS: UPIS 4칼럼, KRAS 3칼럼
+    renderGisSection('gisCheckBody', sections.GIS, templateType);
+    // APP: 대분류/중분류/점검 내용/결과 (4칼럼)
+    renderAppSection('appCheckBody', sections.APP);
+}
+
+function renderCheckSection(bodyId, items) {
+    if (!items || items.length === 0) { document.getElementById(bodyId).innerHTML = ''; return; }
+    var html = '';
+    var grouped = groupByCategory(items);
+    grouped.forEach(function(g) {
+        g.items.forEach(function(item, i) {
+            html += '<tr>' +
+                (i === 0 ? '<td class="cat-cell" rowspan="' + g.items.length + '">' + g.cat + '</td>' : '') +
+                '<td>' + item.itemName + '</td>' +
+                '<td>' + (item.itemMethod || '') + '</td>' +
+                '<td class="result-cell">' + resultCheckboxes(item.section + '_' + item.sortOrder) + '</td></tr>';
+        });
+    });
+    document.getElementById(bodyId).innerHTML = html;
+}
+
+// AP서버: 5칼럼 (종류/점검 항목/점검 내용/점검 기준/결과)
+function renderApSection(bodyId, items) {
+    if (!items || items.length === 0) { document.getElementById(bodyId).innerHTML = ''; return; }
+    var html = '';
+    var grouped = groupByCategory(items);
+    grouped.forEach(function(g) {
+        g.items.forEach(function(item, i) {
+            var parts = (item.itemMethod || '').split('||');
+            var content = parts[0] || '';
+            var criteria = parts[1] || '';
+            html += '<tr>' +
+                (i === 0 ? '<td class="cat-cell" rowspan="' + g.items.length + '">' + g.cat + '</td>' : '') +
+                '<td>' + item.itemName + '</td>' +
+                '<td>' + content + '</td>' +
+                '<td>' + criteria + '</td>' +
+                '<td class="result-cell">' + resultCheckboxes('AP_' + item.sortOrder) + '</td></tr>';
+        });
+    });
+    document.getElementById(bodyId).innerHTML = html;
+}
+
+// GIS: UPIS=4칼럼(대상/점검항목/내용/결과), KRAS=3칼럼(대상/내용/결과)
+function renderGisSection(bodyId, items, templateType) {
+    if (!items || items.length === 0) { document.getElementById(bodyId).innerHTML = ''; return; }
+    var html = '';
+    var isKras = (templateType === 'KRAS');
+    var grouped = groupByCategory(items);
+    grouped.forEach(function(g) {
+        g.items.forEach(function(item, i) {
+            if (isKras) {
+                // 3칼럼: 대상 | 점검 내용 및 방법 | 결과
+                // itemName + itemMethod를 합쳐서 표시
+                var methodText = item.itemName;
+                if (item.itemMethod) methodText += ' | ' + item.itemMethod;
+                html += '<tr>' +
+                    (i === 0 ? '<td class="cat-cell" rowspan="' + g.items.length + '">' + g.cat + '</td>' : '') +
+                    '<td>' + methodText + '</td>' +
+                    '<td class="result-cell">' + resultCheckboxes('GIS_' + item.sortOrder) + '</td></tr>';
+            } else {
+                // 4칼럼: 대상 | 점검 항목 | 점검 내용 및 방법 | 결과
+                html += '<tr>' +
+                    (i === 0 ? '<td class="cat-cell" rowspan="' + g.items.length + '">' + g.cat + '</td>' : '') +
+                    '<td>' + item.itemName + '</td>' +
+                    '<td>' + (item.itemMethod || '') + '</td>' +
+                    '<td class="result-cell">' + resultCheckboxes('GIS_' + item.sortOrder) + '</td></tr>';
+            }
+        });
+    });
+    document.getElementById(bodyId).innerHTML = html;
+}
+
+// APP: 대분류/중분류/점검 내용/결과 (4칼럼)
+function renderAppSection(bodyId, items) {
+    if (!items || items.length === 0) { document.getElementById(bodyId).innerHTML = ''; return; }
+    var html = '';
+    var grouped = groupByCategory(items);
+    grouped.forEach(function(g) {
+        g.items.forEach(function(item, i) {
+            // category=대분류, itemName=중분류, itemMethod=점검 내용
+            html += '<tr>' +
+                (i === 0 ? '<td class="cat-cell" rowspan="' + g.items.length + '">' + g.cat + '</td>' : '') +
+                '<td>' + item.itemName + '</td>' +
+                '<td>' + (item.itemMethod || '') + '</td>' +
+                '<td class="result-cell">' + resultCheckboxes('APP_' + item.sortOrder) + '</td></tr>';
+        });
+    });
+    document.getElementById(bodyId).innerHTML = html;
+}
+
+// 체크박스 HTML 생성
+function resultCheckboxes(name) {
+    return '<label><input type="checkbox" name="chk_' + name + '_ok" value="정상" onchange="uncheckOther(this)"> 정상</label>' +
+           '<label><input type="checkbox" name="chk_' + name + '_ng" value="점검" onchange="uncheckOther(this)"> 점검</label>';
+}
+
+function uncheckOther(el) {
+    if (!el.checked) return;
+    var parent = el.closest('.result-cell');
+    parent.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+        if (cb !== el) cb.checked = false;
+    });
+}
+
+function groupByCategory(items) {
+    var groups = [], currentCat = null, currentGroup = null;
+    items.forEach(function(item) {
+        if (item.category !== currentCat) {
+            currentCat = item.category;
+            currentGroup = { cat: currentCat || '', items: [] };
+            groups.push(currentGroup);
+        }
+        currentGroup.items.push(item);
+    });
+    return groups;
+}
+
+// === 점검대상: UPIS HW+SW 서버정보 채우기 ===
+function fillTargetHW(list) {
+    var db = list.find(function(s) { return s.serverType === 'DB'; });
+    var ap = list.find(function(s) { return s.serverType !== 'DB'; });
+    if (db) {
+        document.getElementById('target_db_model').textContent = db.serverModel || '-';
+        document.getElementById('target_db_cpu').textContent = db.cpuSpec || '-';
+        document.getElementById('target_db_memory').textContent = db.memorySpec || '-';
+        document.getElementById('target_db_disk').textContent = db.diskSpec || '-';
+        document.getElementById('target_db_network').textContent = db.networkSpec || '-';
+        document.getElementById('target_db_power').textContent = db.powerSpec || '이중화 전원';
+        document.getElementById('target_db_os').textContent = db.osDetail || db.osNm || '-';
+    }
+    if (ap) {
+        document.getElementById('target_ap_model').textContent = ap.serverModel || '-';
+        document.getElementById('target_ap_cpu').textContent = ap.cpuSpec || '-';
+        document.getElementById('target_ap_memory').textContent = ap.memorySpec || '-';
+        document.getElementById('target_ap_disk').textContent = ap.diskSpec || '-';
+        document.getElementById('target_ap_network').textContent = ap.networkSpec || '-';
+        document.getElementById('target_ap_power').textContent = ap.powerSpec || '이중화 전원';
+        document.getElementById('target_ap_os').textContent = ap.osDetail || ap.osNm || '-';
+    }
+}
+
+function fillServerCheckInfo(list) {
+    var db = list.find(function(s) { return s.serverType === 'DB'; });
+    var ap = list.find(function(s) { return s.serverType !== 'DB'; });
+    if (db) {
+        document.getElementById('db_serverName').textContent = db.serverModel || '-';
+        document.getElementById('db_os').textContent = db.osDetail || db.osNm || '-';
+        document.getElementById('db_hostName').textContent = 'UPIS-DB';
+        document.getElementById('dbms_target').textContent = 'UPIS DB';
+        document.getElementById('dbms_os').textContent = db.osDetail || db.osNm || '-';
+        if (db.ipAddr) document.getElementById('dbms_ip').value = db.ipAddr;
+    }
+    if (ap) {
+        document.getElementById('ap_serverName').textContent = ap.serverModel || '-';
+        document.getElementById('ap_os').textContent = ap.osDetail || ap.osNm || '-';
+        document.getElementById('ap_cpu').textContent = ap.cpuSpec || '-';
+        document.getElementById('ap_memory').textContent = ap.memorySpec || '-';
+        document.getElementById('ap_disk').textContent = ap.diskSpec || '-';
+    }
+}
+
+// === 소프트웨어 정보 자동 채움 ===
+function fillSoftwareInfo(serverList) {
+    var dbmsArr = [], gisArr = [];
+    serverList.forEach(function(s) {
+        if (!s.softwares) return;
+        s.softwares.forEach(function(sw) {
+            var name = sw.swNm || '';
+            if (sw.swCategory === 'DB') {
+                dbmsArr.push(name);
+            } else if (name.indexOf('Spatial Server') >= 0 || name.indexOf('GeoWeb') >= 0 || name.indexOf('GeoSpatial') >= 0) {
+                gisArr.push(name);
+            }
+        });
+    });
+    var dbmsText = dbmsArr.join(' / ') || '-';
+    document.getElementById('target_sw_dbms').textContent = dbmsText;
+    if (gisArr.length > 0) {
+        var gisHtml = gisArr.map(function(g) { return '<div style="padding:4px 0;">' + g + '</div>'; }).join('');
+        document.getElementById('target_sw_gis').innerHTML = gisHtml;
+    } else {
+        document.getElementById('target_sw_gis').textContent = '-';
+    }
+    if (dbmsArr.length > 0) document.getElementById('dbms_sw').textContent = dbmsArr[0];
+}
+
+// === 방문이력 ===
+function addVisitRow(data) {
+    var year = (data && data.visitYear) || document.getElementById('selYear').value || new Date().getFullYear();
+    var html = '<tr>' +
+        '<td><input type="text" value="' + year + '" style="width:60px;text-align:center;"></td>' +
+        '<td><input type="text" value="' + ((data && data.visitMonth) || '') + '" style="width:36px;text-align:center;"></td>' +
+        '<td><input type="text" value="' + ((data && data.visitDay) || '') + '" style="width:36px;text-align:center;"></td>' +
+        '<td><input type="text" value="' + ((data && data.task) || '') + '"></td>' +
+        '<td><input type="text" value="' + ((data && data.symptom) || '') + '"></td>' +
+        '<td><input type="text" value="' + ((data && data.action) || '') + '"></td>' +
+        '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+    document.getElementById('visitBody').insertAdjacentHTML('beforeend', html);
+}
+
+// === 데이터 수집 ===
+function collectFormData(status) {
+    var projId = document.getElementById('projId').value;
+    var sysType = document.getElementById('cover_sysType').value;
+
+    var visits = [];
+    var sortIdx = 0;
+    document.querySelectorAll('#visitBody tr').forEach(function(row) {
+        var inputs = row.querySelectorAll('input');
+        visits.push({
+            visitYear: inputs[0].value, visitMonth: inputs[1].value, visitDay: inputs[2].value,
+            task: inputs[3].value, symptom: inputs[4].value, action: inputs[5].value,
+            sortOrder: sortIdx++
+        });
+    });
+
+    var checkResults = [];
+    collectCheckResults(checkResults, 'dbCheckBody', 'DB');
+    collectApCheckResults(checkResults, 'apCheckBody', 'AP');
+    collectCheckResults(checkResults, 'dbmsCheckBody', 'DBMS');
+    collectGisCheckResults(checkResults, 'gisCheckBody', 'GIS');
+    collectAppCheckResults(checkResults, 'appCheckBody', 'APP');
+
+    // DB 사용율
+    var dbUsageFields = ['cpu','memory','root','backup','oracle','oradata','archive'];
+    var dbUsageLabels = ['CPU','Memory','/','\/backup','oracle','Oradata','archive'];
+    dbUsageFields.forEach(function(f, i) {
+        var el = document.getElementById('db_usage_' + f);
+        if (el && el.value) {
+            checkResults.push({ section: 'DB_USAGE', category: dbUsageLabels[i], itemName: '', itemMethod: '', result: el.value, sortOrder: i });
+        }
+    });
+
+    // AP 사용율
+    var apUsageFields = ['cpu','memory','diskC','diskD'];
+    var apUsageLabels = ['CPU','Memory','Disk C:','Disk D:'];
+    apUsageFields.forEach(function(f, i) {
+        var el = document.getElementById('ap_usage_' + f);
+        if (el && el.value) {
+            checkResults.push({ section: 'AP_USAGE', category: apUsageLabels[i], itemName: '', itemMethod: '', result: el.value, sortOrder: i });
+        }
+    });
+
+    // DBMS 기타
+    var dbmsEtcEl = document.getElementById('dbms_etc');
+    if (dbmsEtcEl && dbmsEtcEl.value) {
+        checkResults.push({ section: 'DBMS_ETC', category: '기타', itemName: '', itemMethod: '', result: dbmsEtcEl.value, sortOrder: 0 });
+    }
+
+    return {
+        id: document.getElementById('reportId').value || null,
+        pjtId: projId,
+        inspectMonth: document.getElementById('cover_month').value,
+        sysType: sysType,
+        docTitle: document.getElementById('cover_title').value,
+        inspCompany: document.getElementById('cover_inspCompany').value,
+        inspName: document.getElementById('cover_inspName').value,
+        confOrg: document.getElementById('cover_confOrg').value,
+        confName: document.getElementById('cover_confName').value,
+        inspDbms: document.getElementById('target_sw_dbms')?.textContent || '',
+        inspGis: document.getElementById('target_sw_gis')?.textContent || '',
+        dbmsIp: document.getElementById('dbms_ip').value,
+        inspSign: getSignData('inspSignCanvas'),
+        confSign: getSignData('confSignCanvas'),
+        status: status || 'DRAFT',
+        visits: visits,
+        checkResults: checkResults
+    };
+}
+
+function collectCheckResults(results, bodyId, section) {
+    var sortIdx = 0;
+    document.querySelectorAll('#' + bodyId + ' tr').forEach(function(row) {
+        var catCell = row.querySelector('.cat-cell');
+        var tds = row.querySelectorAll('td');
+        var category = catCell ? catCell.textContent.trim() : (results.length > 0 ? results[results.length - 1].category : '');
+        var resultCell = row.querySelector('.result-cell');
+        var result = getCheckboxResult(resultCell);
+        var startIdx = catCell ? 1 : 0;
+        var itemName = tds[startIdx] ? tds[startIdx].textContent.trim() : '';
+        var itemMethod = tds[startIdx + 1] ? tds[startIdx + 1].textContent.trim() : '';
+        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, sortOrder: sortIdx++ });
+    });
+}
+
+function collectApCheckResults(results, bodyId, section) {
+    var sortIdx = 0;
+    document.querySelectorAll('#' + bodyId + ' tr').forEach(function(row) {
+        var catCell = row.querySelector('.cat-cell');
+        var tds = row.querySelectorAll('td');
+        var category = catCell ? catCell.textContent.trim() : (results.length > 0 ? results[results.length - 1].category : '');
+        var resultCell = row.querySelector('.result-cell');
+        var result = getCheckboxResult(resultCell);
+        var startIdx = catCell ? 1 : 0;
+        var itemName = tds[startIdx] ? tds[startIdx].textContent.trim() : '';
+        var content = tds[startIdx + 1] ? tds[startIdx + 1].textContent.trim() : '';
+        var criteria = tds[startIdx + 2] ? tds[startIdx + 2].textContent.trim() : '';
+        var itemMethod = content + (criteria ? '||' + criteria : '');
+        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, sortOrder: sortIdx++ });
+    });
+}
+
+function collectGisCheckResults(results, bodyId, section) {
+    collectCheckResults(results, bodyId, section);
+}
+
+function collectAppCheckResults(results, bodyId, section) {
+    var sortIdx = 0;
+    document.querySelectorAll('#' + bodyId + ' tr').forEach(function(row) {
+        var catCell = row.querySelector('.cat-cell');
+        var tds = row.querySelectorAll('td');
+        var category = catCell ? catCell.textContent.trim() : (results.length > 0 ? results[results.length - 1].category : '');
+        var resultCell = row.querySelector('.result-cell');
+        var result = getCheckboxResult(resultCell);
+        var startIdx = catCell ? 1 : 0;
+        var itemName = tds[startIdx] ? tds[startIdx].textContent.trim() : '';
+        var itemMethod = tds[startIdx + 1] ? tds[startIdx + 1].textContent.trim() : '';
+        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, sortOrder: sortIdx++ });
+    });
+}
+
+function getCheckboxResult(cell) {
+    if (!cell) return '';
+    var checkboxes = cell.querySelectorAll('input[type="checkbox"]');
+    for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) return checkboxes[i].value;
+    }
+    return '';
+}
+
+// === 저장 ===
+function saveReport(status) {
+    var projId = document.getElementById('projId').value;
+    if (!projId) { alert('사업을 선택해주세요.'); return; }
+
+    var payload = collectFormData(status);
+    var headers = { 'Content-Type': 'application/json' };
+    if (CSRF_HEADER && CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
+
+    fetch('/document/api/inspect-report', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            var saved = resp.data || resp;
+            if (saved.id || resp.success) {
+                if (saved.id) document.getElementById('reportId').value = saved.id;
+                if (status === 'COMPLETED') {
+                    alert('저장되었습니다.');
+                } else {
+                    showDraftSaved();
+                }
+            } else {
+                alert(resp.error || '저장 실패');
+            }
+        })
+        .catch(function(e) { alert('저장 오류: ' + e.message); });
+}
+
+// === 불러오기 ===
+function openReportList() {
+    var projId = document.getElementById('projId').value;
+    if (!projId) { alert('사업을 먼저 선택해주세요.'); return; }
+    document.getElementById('reportListModal').style.display = 'block';
+
+    fetch('/document/api/inspect-reports?pjtId=' + projId)
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            var list = resp.data || resp || [];
+            if (!list || list.length === 0) {
+                document.getElementById('reportListBody').innerHTML = '<div style="color:#999;padding:20px;text-align:center;">저장된 점검내역서가 없습니다.</div>';
+                return;
+            }
+            var html = '';
+            list.forEach(function(r) {
+                var statusClass = (r.status === 'COMPLETED') ? 'completed' : 'draft';
+                var statusText = (r.status === 'COMPLETED') ? '완료' : '임시저장';
+                html += '<div class="report-item" onclick="loadReport(' + r.id + ')">' +
+                    '<div class="info"><b>' + (r.inspectMonth || '-') + '</b> ' + (r.docTitle || '') + '</div>' +
+                    '<span class="status ' + statusClass + '">' + statusText + '</span></div>';
+            });
+            document.getElementById('reportListBody').innerHTML = html;
+        });
+}
+
+function loadReport(id) {
+    var modal = document.getElementById('reportListModal');
+    if (modal) modal.style.display = 'none';
+
+    fetch('/document/api/inspect-report/' + id)
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            var data = resp.data || resp;
+
+            // 1) 기본 필드 복원
+            document.getElementById('reportId').value = data.id;
+            document.getElementById('cover_month').value = data.inspectMonth || '';
+            document.getElementById('cover_title').value = data.docTitle || '';
+            document.getElementById('cover_inspCompany').value = data.inspCompany || '';
+            document.getElementById('cover_inspName').value = data.inspName || '';
+            document.getElementById('cover_confOrg').value = data.confOrg || '';
+            document.getElementById('cover_confName').value = data.confName || '';
+            document.getElementById('dbms_ip').value = data.dbmsIp || '';
+
+            clearSign('inspSignCanvas');
+            clearSign('confSignCanvas');
+            loadSignData('inspSignCanvas', data.inspSign);
+            loadSignData('confSignCanvas', data.confSign);
+
+            // 방문이력 복원
+            document.getElementById('visitBody').innerHTML = '';
+            if (data.visits && data.visits.length > 0) {
+                data.visits.forEach(function(v) { addVisitRow(v); });
+            } else {
+                addVisitRow();
+            }
+
+            // 2) 프로젝트 정보 가져와서 4단계 드롭다운 + 인프라 + 시스템유형 설정
+            if (data.pjtId) {
+                fetch('/projects/api/' + data.pjtId)
+                    .then(function(r2) { return r2.json(); })
+                    .then(function(res) {
+                        var p = res.data || res;
+                        currentProjectData = p;
+
+                        // 프로젝트 드롭다운에 직접 option 추가 후 선택
+                        var projSel = document.getElementById('projId');
+                        projSel.innerHTML = '<option value="' + p.projId + '">' + (p.projNm || '') + '</option>';
+                        projSel.value = p.projId;
+
+                        // 4단계 드롭다운도 표시용으로 설정
+                        var selYear = document.getElementById('selYear');
+                        if (p.year) { selYear.innerHTML = '<option value="' + p.year + '">' + p.year + '년</option>'; selYear.value = p.year; }
+                        var selCity = document.getElementById('selCity');
+                        if (p.cityNm) { selCity.innerHTML = '<option value="' + p.cityNm + '">' + p.cityNm + '</option>'; selCity.value = p.cityNm; }
+                        var selDist = document.getElementById('selDist');
+                        if (p.distNm) { selDist.innerHTML = '<option value="' + p.distNm + '">' + p.distNm + '</option>'; selDist.value = p.distNm; }
+                        var selSystem = document.getElementById('selSystem');
+                        if (p.sysNmEn) { selSystem.innerHTML = '<option value="' + p.sysNmEn + '">' + p.sysNmEn + '</option>'; selSystem.value = p.sysNmEn; }
+
+                        // 표지 필드
+                        document.getElementById('cover_projNm').value = p.projNm || '';
+                        document.getElementById('cover_period').value = (p.startDt || '') + ' ~ ' + (p.endDt || '');
+                        if (!data.confOrg && p.orgNm) document.getElementById('cover_confOrg').value = p.orgNm;
+
+                        // 시스템유형
+                        var sysType = data.sysType || determineSysType(p.sysNmEn, p.swAmt, p.hwAmt);
+                        document.getElementById('cover_sysType').value = sysType;
+                        document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(sysType);
+
+                        // 시스템유형 변경 → 탭/섹션 + 템플릿 로드
+                        onSysTypeChange();
+
+                        // 인프라 서버 정보 로드
+                        var distNm = p.distNm || '';
+                        var sysNmEn = p.sysNmEn || '';
+                        if (distNm && sysNmEn) {
+                            fetch('/document/api/infra-servers?distNm=' + encodeURIComponent(distNm) + '&sysNmEn=' + encodeURIComponent(sysNmEn))
+                                .then(function(r3) { return r3.json(); })
+                                .then(function(list) {
+                                    fillTargetHW(list);
+                                    fillServerCheckInfo(list);
+                                    fillSoftwareInfo(list);
+                                })
+                                .catch(function() {});
+                        }
+
+                        // 3) 점검결과 복원 (템플릿 로딩 완료 대기 후)
+                        if (data.checkResults && data.checkResults.length > 0) {
+                            setTimeout(function() { restoreCheckResults(data.checkResults); }, 800);
+                        }
+
+                        startAutoDraft();
+                    });
+            } else {
+                // 프로젝트 없는 경우
+                if (data.sysType) {
+                    document.getElementById('cover_sysType').value = data.sysType;
+                    document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(data.sysType);
+                    onSysTypeChange();
+                }
+                if (data.checkResults && data.checkResults.length > 0) {
+                    setTimeout(function() { restoreCheckResults(data.checkResults); }, 800);
+                }
+                startAutoDraft();
+            }
+        });
+}
+
+function restoreCheckResults(results) {
+    var sectionBodies = { DB: 'dbCheckBody', AP: 'apCheckBody', DBMS: 'dbmsCheckBody', GIS: 'gisCheckBody', APP: 'appCheckBody' };
+    var sectionCounters = { DB: 0, AP: 0, DBMS: 0, GIS: 0, APP: 0 };
+
+    // DB_USAGE, AP_USAGE, DBMS_ETC 필드 매핑
+    var dbUsageMap = { 'CPU': 'db_usage_cpu', 'Memory': 'db_usage_memory', '/': 'db_usage_root',
+        '/backup': 'db_usage_backup', '\\/backup': 'db_usage_backup', 'oracle': 'db_usage_oracle', 'Oradata': 'db_usage_oradata', 'archive': 'db_usage_archive' };
+    var apUsageMap = { 'CPU': 'ap_usage_cpu', 'Memory': 'ap_usage_memory', 'Disk C:': 'ap_usage_diskC', 'Disk D:': 'ap_usage_diskD' };
+
+    results.forEach(function(r) {
+        // 사용율/기타 복원
+        if (r.section === 'DB_USAGE') {
+            var elId = dbUsageMap[r.category];
+            if (elId) { var el = document.getElementById(elId); if (el) el.value = r.result || ''; }
+            return;
+        }
+        if (r.section === 'AP_USAGE') {
+            var elId2 = apUsageMap[r.category];
+            if (elId2) { var el2 = document.getElementById(elId2); if (el2) el2.value = r.result || ''; }
+            return;
+        }
+        if (r.section === 'DBMS_ETC') {
+            var etcEl = document.getElementById('dbms_etc');
+            if (etcEl) etcEl.value = r.result || '';
+            return;
         }
 
-        function loadInfraInfo() {
-            var sel = document.getElementById('infraId');
-            var opt = sel.options[sel.selectedIndex];
-            if (opt.value) {
-                var sys = opt.dataset.sys || '';
-                document.getElementById('cover_name').value = sys;
+        var bodyId = sectionBodies[r.section];
+        if (!bodyId) return;
+        var idx = sectionCounters[r.section]++;
+        var rows = document.querySelectorAll('#' + bodyId + ' tr');
+        if (idx < rows.length) {
+            var cell = rows[idx].querySelector('.result-cell');
+            if (cell && r.result) {
+                cell.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+                    cb.checked = (cb.value === r.result);
+                });
             }
         }
+    });
+}
 
-        function updateCoverTitle() {
-            var sysType = document.getElementById('sys_type').value;
-            var titles = {
-                'UPIS': 'UPIS 시스템 점검내역서',
-                'KRAS': 'KRAS 시스템 점검내역서',
-                'IPSS': 'IPSS 시스템 점검내역서'
-            };
-            document.getElementById('cover_title').value = titles[sysType] || '점검내역서';
-        }
-
-        function addReportRow() {
-            var html = '<tr><td><input type="date"></td><td><input type="text"></td>' +
-                '<td><input type="text"></td><td><input type="text"></td>' +
-                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
-            document.getElementById('reportBody').insertAdjacentHTML('beforeend', html);
-        }
-
-        function addTargetRow() {
-            var html = '<tr><td><input type="text"></td><td><input type="text"></td>' +
-                '<td><input type="number"></td><td><input type="text"></td><td><input type="date"></td>' +
-                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
-            document.getElementById('targetBody').insertAdjacentHTML('beforeend', html);
-        }
-
-        function addDetailRow() {
-            var html = '<tr><td><input type="text"></td><td><input type="text"></td>' +
-                '<td class="checkbox-cell"><label><input type="checkbox" value="NORMAL"> 정상 ✓</label></td>' +
-                '<td class="checkbox-cell"><label><input type="checkbox" value="INSPECT"> 점검 ☐</label></td>' +
-                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
-            document.getElementById('detailBody').insertAdjacentHTML('beforeend', html);
-        }
-
-        function saveDocument() {
-            var infraId = document.getElementById('infraId').value;
-            var sysType = document.getElementById('sys_type').value;
-            var title = document.getElementById('cover_title').value || '점검내역서';
-
-            var reportRows = [];
-            document.querySelectorAll('#reportBody tr').forEach(function(row) {
-                var cells = row.cells;
-                reportRows.push({
-                    date: cells[0].querySelector('input').value,
-                    work: cells[1].querySelector('input').value,
-                    symptom: cells[2].querySelector('input').value,
-                    action: cells[3].querySelector('input').value
-                });
-            });
-
-            var targetRows = [];
-            document.querySelectorAll('#targetBody tr').forEach(function(row) {
-                var cells = row.cells;
-                targetRows.push({
-                    productName: cells[0].querySelector('input').value,
-                    version: cells[1].querySelector('input').value,
-                    quantity: cells[2].querySelector('input').value,
-                    purpose: cells[3].querySelector('input').value,
-                    installDate: cells[4].querySelector('input').value
-                });
-            });
-
-            var detailRows = [];
-            document.querySelectorAll('#detailBody tr').forEach(function(row) {
-                var cells = row.cells;
-                var normalCheck = cells[2].querySelector('input[value="NORMAL"]').checked;
-                var inspectCheck = cells[3].querySelector('input[value="INSPECT"]').checked;
-                detailRows.push({
-                    target: cells[0].querySelector('input').value,
-                    inspectionContent: cells[1].querySelector('input').value,
-                    result: normalCheck ? 'NORMAL' : (inspectCheck ? 'INSPECT' : '')
-                });
-            });
-
-            var sections = [
-                { sectionKey: 'cover', sectionData: {
-                    name: document.getElementById('cover_name').value,
-                    sysType: sysType,
-                    title: document.getElementById('cover_title').value,
-                    month: document.getElementById('cover_month').value,
-                    inspectorCompany: document.getElementById('cover_inspector_company').value,
-                    inspectorName: document.getElementById('cover_inspector_name').value,
-                    approverOrg: document.getElementById('cover_approver_org').value,
-                    approverName: document.getElementById('cover_approver_name').value
-                }},
-                { sectionKey: 'report', sectionData: {
-                    reports: reportRows,
-                    targets: targetRows,
-                    diagram: document.getElementById('report_diagram').value
-                }},
-                { sectionKey: 'monthly_detail', sectionData: {
-                    month: document.getElementById('detail_month').value,
-                    details: detailRows,
-                    remarks: document.getElementById('detail_remarks').value
-                }}
-            ];
-
-            fetch('/document/api/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    docType: 'INSPECT',
-                    infraId: infraId || null,
-                    title: title,
-                    sections: sections
-                })
-            })
+// === 자동 임시저장 (2분 간격) ===
+function startAutoDraft() {
+    if (autoDraftTimer) clearInterval(autoDraftTimer);
+    autoDraftTimer = setInterval(function() {
+        var projId = document.getElementById('projId').value;
+        if (!projId) return;
+        var payload = collectFormData('DRAFT');
+        var headers = { 'Content-Type': 'application/json' };
+        if (CSRF_HEADER && CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
+        fetch('/document/api/inspect-report', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
             .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    alert('저장되었습니다. 문서번호: ' + data.docNo);
-                    location.href = '/document/detail/' + data.docId;
-                } else {
-                    alert(data.error || '저장 실패');
+            .then(function(resp) {
+                var saved = resp.data || resp;
+                if (saved.id || resp.success) {
+                    if (saved.id) document.getElementById('reportId').value = saved.id;
+                    showDraftSaved();
                 }
-            });
-        }
-    </script>
+            })
+            .catch(function() {});
+    }, 120000);
+}
+
+function showDraftSaved() {
+    var indicator = document.getElementById('draftIndicator');
+    indicator.style.display = 'inline';
+    indicator.className = 'draft-indicator saved';
+    indicator.innerHTML = '<i class="fas fa-check-circle"></i> 자동저장됨 (' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) + ')';
+    setTimeout(function() { indicator.style.display = 'none'; }, 5000);
+}
+
+// === 서명 요청 모달 ===
+var signModalInited = false;
+
+function openSignModal() {
+    var projId = document.getElementById('projId').value;
+    if (!projId) { alert('사업을 선택해주세요.'); return; }
+
+    // 먼저 임시저장
+    var payload = collectFormData('DRAFT');
+    var headers = { 'Content-Type': 'application/json' };
+    if (CSRF_HEADER && CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
+
+    fetch('/document/api/inspect-report', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            var saved = resp.data || resp;
+            if (saved.id) document.getElementById('reportId').value = saved.id;
+
+            // 모달 열기
+            document.getElementById('signModal').style.display = 'block';
+            document.getElementById('signStep1').style.display = 'block';
+            document.getElementById('signStep2').style.display = 'none';
+
+            var info = document.getElementById('cover_title').value || '점검내역서';
+            var month = document.getElementById('cover_month').value || '';
+            document.getElementById('signModalInfo').textContent = info + (month ? ' (' + month + ')' : '');
+
+            // 모달 캔버스 초기화 (최초 1회)
+            if (!signModalInited) {
+                initSignCanvas('modalInspCanvas');
+                initSignCanvas('modalConfCanvas');
+                signModalInited = true;
+            }
+
+            // 기존 서명 있으면 복원
+            clearSign('modalInspCanvas');
+            clearSign('modalConfCanvas');
+            var inspData = getSignData('inspSignCanvas');
+            var confData = getSignData('confSignCanvas');
+            if (inspData) loadSignData('modalInspCanvas', inspData);
+            if (confData) loadSignData('modalConfCanvas', confData);
+        })
+        .catch(function(e) { alert('임시저장 실패: ' + e.message); });
+}
+
+function closeSignModal() {
+    document.getElementById('signModal').style.display = 'none';
+}
+
+function signStepNext() {
+    var data = getSignData('modalInspCanvas');
+    if (!data) {
+        alert('점검자 서명을 입력해주세요.');
+        return;
+    }
+    document.getElementById('signStep1').style.display = 'none';
+    document.getElementById('signStep2').style.display = 'block';
+}
+
+function signStepBack() {
+    document.getElementById('signStep2').style.display = 'none';
+    document.getElementById('signStep1').style.display = 'block';
+}
+
+function signComplete() {
+    var confData = getSignData('modalConfCanvas');
+    if (!confData) {
+        alert('확인자 서명을 입력해주세요.');
+        return;
+    }
+
+    // 모달 캔버스 → 표지 캔버스로 복사
+    var inspData = getSignData('modalInspCanvas');
+    clearSign('inspSignCanvas');
+    clearSign('confSignCanvas');
+    if (inspData) loadSignData('inspSignCanvas', inspData);
+    loadSignData('confSignCanvas', confData);
+
+    // 서명 모달 닫기
+    document.getElementById('signModal').style.display = 'none';
+
+    // 약간 딜레이 후 완료 저장 (캔버스 이미지 로드 대기)
+    setTimeout(function() {
+        saveReport('COMPLETED');
+    }, 300);
+}
+</script>
 </body>
 </html>

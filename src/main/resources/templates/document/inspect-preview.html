@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>점검내역서 미리보기</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #4a4a4a; margin: 0; padding: 0; }
+        .toolbar { background: #333; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .toolbar h3 { margin: 0; font-size: 1em; }
+        .toolbar-actions { display: flex; gap: 8px; }
+        .toolbar-actions a, .toolbar-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; }
+        .btn-pdf { background: #e74a3b; color: white; }
+        .btn-back { background: #858796; color: white; }
+
+        .preview-container { max-width: 900px; margin: 30px auto; padding: 0 20px 60px; }
+        .document-paper { background: white; border-radius: 2px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); padding: 50px 60px; min-height: 800px; }
+
+        /* 표지 */
+        /* 표지 */
+        .cover-page { min-height: 700px; position: relative; margin-bottom: 40px; padding-bottom: 160px; }
+        .cover-header { border: 2px solid #2a4d8e; padding: 24px 40px; text-align: center; margin: 20px 50px 0; }
+        .cover-header .proj-name { font-size: 1.3em; font-weight: 700; color: #2a4d8e; }
+        .cover-header .doc-name { font-size: 1.6em; font-weight: 700; color: #2a4d8e; margin-top: 8px; }
+        .cover-center { text-align: center; margin-top: 80px; }
+        .cover-center .month { font-size: 1.4em; font-weight: 700; }
+        .cover-center .org { font-size: 1.2em; font-weight: 700; margin-top: 60px; }
+        .cover-bottom { position: absolute; bottom: 0; left: 0; right: 0; }
+        .cover-table { width: 100%; border-collapse: collapse; margin: 0 auto; }
+        .cover-table th, .cover-table td { padding: 10px 14px; border: 1px solid #999; font-size: 0.88em; }
+        .cover-table th { background: #e8eaf6; text-align: center; font-weight: 600; width: 100px; white-space: nowrap; }
+        .sign-img { max-width: 160px; max-height: 60px; vertical-align: middle; }
+
+        /* 섹션 */
+        .section-header { background: #1a237e; color: white; padding: 8px 14px; font-weight: 700; font-size: 0.95em; margin: 30px 0 0; }
+        .sub-header { font-weight: 700; font-size: 0.92em; margin: 20px 0 8px; padding-left: 4px; border-left: 3px solid #4caf50; padding: 4px 0 4px 8px; }
+
+        /* 테이블 공통 */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
+        .data-table th, .data-table td { padding: 7px 10px; border: 1px solid #999; }
+        .data-table thead th { background: #e8eaf6; color: #1a237e; font-weight: 700; text-align: center; }
+        .data-table .cat { background: #f5f5f5; font-weight: 600; text-align: center; white-space: nowrap; }
+
+        .spec-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-bottom: 12px; }
+        .spec-table th, .spec-table td { padding: 8px 12px; border: 1px solid #999; }
+        .spec-table th { background: #f5f5f5; font-weight: 600; width: 120px; text-align: left; }
+
+        .result-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.82em; font-weight: 600; }
+        .result-ok { background: #d4edda; color: #155724; }
+        .result-check { background: #fff3cd; color: #856404; }
+        .result-fail { background: #f8d7da; color: #721c24; }
+        .result-na { background: #e2e3e5; color: #383d41; }
+
+        .page-break { page-break-before: always; border-top: 2px dashed #ccc; margin-top: 40px; padding-top: 20px; }
+
+        @media print {
+            body { background: white; }
+            .toolbar { display: none; }
+            .preview-container { margin: 0; padding: 0; }
+            .document-paper { box-shadow: none; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 도구바 -->
+    <div class="toolbar">
+        <h3><i class="fas fa-clipboard-check"></i> 점검내역서 미리보기</h3>
+        <div class="toolbar-actions">
+            <a th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-download"></i> PDF 다운로드</a>
+            <a href="/document/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>
+        </div>
+    </div>
+
+    <div class="preview-container">
+        <div class="document-paper">
+
+            <!-- ========== 표지 ========== -->
+            <div class="cover-page">
+                <div class="cover-header">
+                    <div class="proj-name" th:text="${project?.projNm} ?: ''"></div>
+                    <div class="doc-name">점검내역서</div>
+                </div>
+
+                <div class="cover-center">
+                    <div class="month" th:text="${report.inspectMonth != null ? report.inspectMonth.substring(0,4) + '년 ' + (report.inspectMonth.length() > 5 ? report.inspectMonth.substring(5) : '') + '월' : ''}"></div>
+                    <div style="height:40px;"></div>
+                    <div style="height:40px;"></div>
+                    <div class="org" th:text="${project?.distNm} ?: ''"></div>
+                </div>
+
+                <div class="cover-bottom">
+                    <table class="cover-table">
+                        <tr><th>사 업 명</th><td colspan="5" th:text="${project?.projNm}">-</td></tr>
+                        <tr><th>사 업 기 간</th><td colspan="5" th:text="${project != null ? project.startDt + ' ~ ' + project.endDt : '-'}">-</td></tr>
+                        <tr><th>점 검 일</th>
+                            <td colspan="2" th:text="${report.visits != null and !report.visits.isEmpty() ? report.visits[0].visitYear + '년 ' + report.visits[0].visitMonth + '월 ' + report.visits[0].visitDay + '일' : '-'}"></td>
+                            <th>보 고 일</th>
+                            <td colspan="2" th:text="${report.visits != null and !report.visits.isEmpty() ? report.visits[0].visitYear + '년 ' + report.visits[0].visitMonth + '월 ' + report.visits[0].visitDay + '일' : '-'}"></td>
+                        </tr>
+                        <tr>
+                            <th>점 검 자</th>
+                            <td th:text="${report.inspName}" style="text-align:center;"></td>
+                            <td style="text-align:center;">
+                                <span th:if="${report.inspSign != null and !report.inspSign.isEmpty()}">
+                                    <img th:src="${report.inspSign}" class="sign-img" alt="점검자서명"/>
+                                </span>
+                                <span>(인)</span>
+                            </td>
+                            <th>확 인 자</th>
+                            <td th:text="${report.confName}" style="text-align:center;"></td>
+                            <td style="text-align:center;">
+                                <span th:if="${report.confSign != null and !report.confSign.isEmpty()}">
+                                    <img th:src="${report.confSign}" class="sign-img" alt="확인자서명"/>
+                                </span>
+                                <span>(인)</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ========== 1. 방문이력 ========== -->
+            <div class="section-header">1. 월별 점검 및 장애조치 이력 요약</div>
+            <table class="data-table" style="margin-top:0;">
+                <thead><tr><th style="width:50px;">년도</th><th style="width:35px;">월</th><th style="width:35px;">일</th><th>업무</th><th>증상</th><th>조치내용</th></tr></thead>
+                <tbody>
+                    <tr th:each="v : ${report.visits}">
+                        <td style="text-align:center;" th:text="${v.visitYear}"></td>
+                        <td style="text-align:center;" th:text="${v.visitMonth}"></td>
+                        <td style="text-align:center;" th:text="${v.visitDay}"></td>
+                        <td style="text-align:center;" th:text="${v.task}"></td>
+                        <td style="text-align:center;" th:text="${v.symptom}"></td>
+                        <td style="text-align:center;" th:text="${v.action}"></td>
+                    </tr>
+                    <tr th:if="${report.visits == null or report.visits.isEmpty()}">
+                        <td colspan="6" style="text-align:center;color:#999;">방문이력 없음</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- ========== 2. 점검대상 ========== -->
+            <div class="section-header">2. 점검 대상</div>
+
+            <!-- DB/AP 서버 스펙 (UPIS HW+SW) -->
+            <th:block th:if="${report.sysType == 'UPIS' and infraList != null}">
+                <th:block th:each="infra : ${infraList}">
+                    <th:block th:each="srv : ${infra.servers}">
+                        <div class="sub-header" th:text="'■ ' + ${srv.serverType != null ? (srv.serverType == 'DB' ? 'DB 서버' : 'AP 서버') : 'Server'}"></div>
+                        <table class="spec-table">
+                            <tr><th>제품명(M/T, S/N)</th><td th:text="${srv.serverModel}">-</td></tr>
+                            <tr><th>CPU</th><td th:text="${srv.cpuSpec}">-</td></tr>
+                            <tr><th>메모리</th><td th:text="${srv.memorySpec}">-</td></tr>
+                            <tr><th>디스크</th><td th:text="${srv.diskSpec}">-</td></tr>
+                            <tr><th>네트워크</th><td th:text="${srv.networkSpec}">-</td></tr>
+                            <tr><th>전원</th><td th:text="${srv.powerSpec}">-</td></tr>
+                            <tr><th>운영체제</th><td th:text="${srv.osDetail}">-</td></tr>
+                        </table>
+                    </th:block>
+                </th:block>
+
+                <div class="sub-header">■ 소프트웨어</div>
+                <table class="spec-table">
+                    <tr><th>DBMS</th><td th:text="${report.inspDbms}">-</td></tr>
+                    <tr><th>GIS 엔진</th><td th:text="${report.inspGis}">-</td></tr>
+                </table>
+            </th:block>
+
+            <!-- ========== 점검결과 ========== -->
+
+                <!-- DB 서버 점검결과 -->
+                <th:block th:if="${dbItems != null and !dbItems.isEmpty()}">
+                    <div class="page-break"></div>
+                    <div class="section-header">3. UPIS DB 서버 점검결과</div>
+                    <table class="data-table" style="margin-top:0;">
+                        <thead><tr><th style="width:80px;">구분</th><th>점검 항목</th><th>수행 명령/방법</th><th style="width:100px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${dbItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;">
+                                    <span th:if="${item.result != null and item.result == '정상'}" class="result-badge result-ok">정상</span>
+                                    <span th:if="${item.result != null and item.result == '점검'}" class="result-badge result-check">점검</span>
+                                    <span th:if="${item.result != null and item.result != '정상' and item.result != '점검' and !item.result.isEmpty()}" class="result-badge result-na" th:text="${item.result}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- DB 사용율 -->
+                    <th:block th:if="${dbUsage != null and !dbUsage.isEmpty()}">
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th colspan="6" style="background:#e3f2fd;text-align:left;font-weight:bold;">사용율</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${dbUsage}">
+                                    <td style="width:14%;font-weight:600;" th:text="${u.category}"></td>
+                                    <td th:text="${u.result}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </th:block>
+                </th:block>
+
+                <!-- AP 서버 점검결과 -->
+                <th:block th:if="${apItems != null and !apItems.isEmpty()}">
+                    <div class="page-break"></div>
+                    <div class="section-header">4. UPIS AP 서버 점검결과</div>
+                    <table class="data-table" style="margin-top:0;">
+                        <thead><tr><th style="width:60px;">종류</th><th>점검 항목</th><th>점검 내용</th><th>점검 기준</th><th style="width:100px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${apItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod != null ? item.itemMethod.split('\\|\\|')[0] : ''}"></td>
+                                <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? item.itemMethod.split('\\|\\|')[1] : ''}"></td>
+                                <td style="text-align:center;">
+                                    <span th:if="${item.result != null and item.result == '정상'}" class="result-badge result-ok">정상</span>
+                                    <span th:if="${item.result != null and item.result == '점검'}" class="result-badge result-check">점검</span>
+                                    <span th:if="${item.result != null and item.result != '정상' and item.result != '점검' and !item.result.isEmpty()}" class="result-badge result-na" th:text="${item.result}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- AP 사용율 -->
+                    <th:block th:if="${apUsage != null and !apUsage.isEmpty()}">
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th colspan="4" style="background:#e3f2fd;text-align:left;font-weight:bold;">사용율</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${apUsage}">
+                                    <td style="width:14%;font-weight:600;" th:text="${u.category}"></td>
+                                    <td th:text="${u.result}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </th:block>
+                </th:block>
+
+                <!-- DBMS 점검결과 -->
+                <th:block th:if="${dbmsItems != null and !dbmsItems.isEmpty()}">
+                    <div class="page-break"></div>
+                    <div class="section-header">5. DBMS (Oracle) 점검결과</div>
+                    <table class="data-table" style="margin-top:0;">
+                        <thead><tr><th style="width:60px;">종류</th><th>점검 항목</th><th>수행 명령/쿼리</th><th style="width:100px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${dbmsItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;">
+                                    <span th:if="${item.result != null and item.result == '정상'}" class="result-badge result-ok">정상</span>
+                                    <span th:if="${item.result != null and item.result == '점검'}" class="result-badge result-check">점검</span>
+                                    <span th:if="${item.result != null and item.result != '정상' and item.result != '점검' and !item.result.isEmpty()}" class="result-badge result-na" th:text="${item.result}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- DBMS 기타 -->
+                    <th:block th:if="${dbmsEtc != null and !dbmsEtc.isEmpty()}">
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th style="background:#e3f2fd;text-align:left;font-weight:bold;">기타</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${dbmsEtc}"><td th:text="${u.result}"></td></tr>
+                            </tbody>
+                        </table>
+                    </th:block>
+                </th:block>
+
+                <!-- GIS 엔진 점검결과 -->
+                <th:block th:if="${gisItems != null and !gisItems.isEmpty()}">
+                    <div class="page-break"></div>
+                    <div class="section-header" th:text="${report.sysType != null and report.sysType == 'KRAS' ? '1. GIS 엔진 점검결과' : '6. GIS 엔진 점검결과'}">GIS 엔진 점검결과</div>
+                    <table class="data-table" style="margin-top:0;" th:if="${report.sysType == null or report.sysType != 'KRAS'}">
+                        <thead><tr><th style="width:160px;">대상</th><th>점검 항목</th><th>점검 내용 및 방법</th><th style="width:100px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${gisItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;">
+                                    <span th:if="${item.result != null and item.result == '정상'}" class="result-badge result-ok">정상</span>
+                                    <span th:if="${item.result != null and item.result == '점검'}" class="result-badge result-check">점검</span>
+                                    <span th:if="${item.result != null and item.result != '정상' and item.result != '점검' and !item.result.isEmpty()}" class="result-badge result-na" th:text="${item.result}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- KRAS 3칼럼 -->
+                    <table class="data-table" style="margin-top:0;" th:if="${report.sysType != null and report.sysType == 'KRAS'}">
+                        <thead><tr><th style="width:160px;">대상</th><th>점검 내용 및 방법</th><th style="width:100px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${gisItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td style="text-align:center;">
+                                    <span th:if="${item.result != null and item.result == '정상'}" class="result-badge result-ok">정상</span>
+                                    <span th:if="${item.result != null and item.result == '점검'}" class="result-badge result-check">점검</span>
+                                    <span th:if="${item.result != null and item.result != '정상' and item.result != '점검' and !item.result.isEmpty()}" class="result-badge result-na" th:text="${item.result}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th:block>
+
+                <!-- 표준시스템(APP) 점검결과 -->
+                <th:block th:if="${appItems != null and !appItems.isEmpty()}">
+                    <div class="page-break"></div>
+                    <div class="section-header" th:text="${report.sysType != null and report.sysType == 'KRAS' ? '2. 표준시스템 점검결과' : '7. 표준시스템 점검결과'}">표준시스템 점검결과</div>
+                    <table class="data-table" style="margin-top:0;">
+                        <thead><tr><th style="width:100px;">대분류</th><th>중분류</th><th>점검 내용</th><th style="width:100px;">결과</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${appItems}">
+                                <td class="cat" th:text="${item.category}"></td>
+                                <td th:text="${item.itemName}"></td>
+                                <td th:text="${item.itemMethod}"></td>
+                                <td style="text-align:center;">
+                                    <span th:if="${item.result != null and item.result == '정상'}" class="result-badge result-ok">정상</span>
+                                    <span th:if="${item.result != null and item.result == '점검'}" class="result-badge result-check">점검</span>
+                                    <span th:if="${item.result != null and item.result != '정상' and item.result != '점검' and !item.result.isEmpty()}" class="result-badge result-na" th:text="${item.result}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th:block>
+
+        </div>
+    </div>
+</body>
+</html>
