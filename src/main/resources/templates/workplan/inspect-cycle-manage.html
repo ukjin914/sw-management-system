@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>정기점검 주기 관리</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -45,6 +46,22 @@
         .btn-del { padding: 4px 10px; background: #e74a3b; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
         .btn-gen-plan { padding: 4px 10px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
         .empty-row td { text-align: center; color: #aaa; padding: 30px; }
+
+        /* === Galaxy Tab S8 세로모드 반응형 === */
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            .container { max-width: 100%; }
+            .page-header { flex-direction: column; gap: 10px; padding: 16px; align-items: flex-start; }
+            .header-actions { display: flex; gap: 6px; }
+            .form-grid { grid-template-columns: 1fr; gap: 10px; }
+            .form-group select, .form-group input { padding: 10px; font-size: 0.92em; }
+            .btn-row { flex-direction: column; }
+            .btn-save, .btn-gen { width: 100%; padding: 12px; font-size: 0.92em; }
+            .reg-section form[style] { flex-direction: column !important; gap: 10px !important; }
+            .list-section { padding: 16px; overflow-x: auto; }
+            table { font-size: 0.8em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            th, td { padding: 8px 8px; white-space: nowrap; min-width: 60px; }
+        }
     </style>
 </head>
 <body>

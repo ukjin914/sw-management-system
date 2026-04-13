@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>점검내역서 미리보기</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -52,6 +53,29 @@
         .result-na { background: #e2e3e5; color: #383d41; }
 
         .page-break { page-break-before: always; border-top: 2px dashed #ccc; margin-top: 40px; padding-top: 20px; }
+
+        /* === Galaxy Tab S8 세로모드 반응형 === */
+        @media (max-width: 900px) {
+            .toolbar { flex-direction: column; gap: 8px; padding: 10px 14px; }
+            .toolbar-actions { width: 100%; justify-content: flex-end; }
+            .toolbar-actions a, .toolbar-actions button { padding: 10px 12px; }
+            .preview-container { margin: 16px auto; padding: 0 8px 40px; }
+            .document-paper { padding: 24px 18px; }
+            .cover-page { min-height: auto; padding-bottom: 20px; }
+            .cover-header { margin: 10px 10px 0; padding: 16px 14px; }
+            .cover-header .proj-name { font-size: 1em; }
+            .cover-header .doc-name { font-size: 1.2em; }
+            .cover-center { margin-top: 40px; }
+            .cover-center .month { font-size: 1.1em; }
+            .cover-center .org { font-size: 1em; margin-top: 30px; }
+            .cover-bottom { position: relative; margin-top: 30px; }
+            .cover-table th, .cover-table td { padding: 7px 8px; font-size: 0.82em; }
+            .sign-img { max-width: 100px; max-height: 40px; }
+            .section-header { font-size: 0.88em; padding: 7px 10px; }
+            .data-table, .spec-table { font-size: 0.78em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .data-table th, .data-table td { padding: 6px 7px; min-width: 50px; }
+            .page-break { margin-top: 24px; padding-top: 12px; }
+        }
 
         @media print {
             body { background: white; }

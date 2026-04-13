@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>점검 방문 현황</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -63,6 +64,24 @@
         .workflow .step.active { background: #1565c0; color: white; }
         .workflow .step.done { background: #1cc88a; color: white; }
         .workflow .arrow { margin: 0 2px; }
+
+        /* === Galaxy Tab S8 세로모드 반응형 === */
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            .container { max-width: 100%; }
+            .page-header { flex-direction: column; gap: 10px; padding: 16px; align-items: flex-start; }
+            .header-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+            .filter-bar { flex-direction: column; gap: 8px; padding: 14px; }
+            .filter-bar select { width: 100%; padding: 10px; font-size: 0.88em; }
+            .summary-row { gap: 8px; }
+            .summary-card { min-width: calc(50% - 8px); flex: none; padding: 12px 10px; }
+            .summary-card .val { font-size: 1.3em; }
+            .list-section { padding: 16px; overflow-x: auto; }
+            table { font-size: 0.8em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            th, td { padding: 8px 8px; white-space: nowrap; min-width: 55px; }
+            .btn-status-change { padding: 6px 10px; font-size: 0.8em; }
+            select[onchange="changeStatus(this)"] { padding: 6px; font-size: 0.82em; }
+        }
     </style>
 </head>
 <body>

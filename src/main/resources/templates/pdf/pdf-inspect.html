@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; font-size: 12px; color: #333; margin: 0; padding: 40px; }
         .letterhead { text-align: center; padding: 20px 0; border-bottom: 3px solid #1565c0; margin-bottom: 30px; }
@@ -20,6 +21,17 @@
         .sign-box .label { font-size: 11px; color: #888; margin-bottom: 5px; }
         .sign-box .line { border-bottom: 1px solid #333; height: 40px; margin-bottom: 3px; }
         .sign-box img { max-height: 40px; }
+
+        /* === Galaxy Tab S8 세로모드 반응형 === */
+        @media (max-width: 900px) {
+            body { padding: 16px; }
+            .letterhead .company { font-size: 18px; }
+            .doc-title { font-size: 15px; }
+            table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            th, td { padding: 6px 8px; font-size: 10px; min-width: 50px; }
+            .signature-area { flex-direction: column; gap: 16px; }
+            .sign-box { width: 100%; }
+        }
     </style>
 </head>
 <body>
