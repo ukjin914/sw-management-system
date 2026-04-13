@@ -201,8 +201,8 @@
                             <tr th:each="item : ${apItems}">
                                 <td class="cat" th:text="${item.category}"></td>
                                 <td th:text="${item.itemName}"></td>
-                                <td th:text="${item.itemMethod != null ? item.itemMethod.split('\\|\\|')[0] : ''}"></td>
-                                <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? item.itemMethod.split('\\|\\|')[1] : ''}"></td>
+                                <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? #strings.substringBefore(item.itemMethod, '||') : (item.itemMethod ?: '')}"></td>
+                                <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? #strings.substringAfter(item.itemMethod, '||') : ''}"></td>
                                 <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
                             </tr>
                         </tbody>
@@ -264,12 +264,20 @@
                         </tbody>
                     </table>
                     <table class="dt" th:if="${report.sysType != null and report.sysType == 'KRAS'}">
-                        <thead><tr><th style="width:130px;">대상</th><th>점검 내용 및 방법</th><th style="width:70px;">결과</th></tr></thead>
+                        <thead><tr><th style="width:160px;">대상</th><th>점검 내용</th></tr></thead>
                         <tbody>
                             <tr th:each="item : ${gisItems}">
                                 <td class="cat" th:text="${item.category}"></td>
-                                <td th:text="${item.itemName}"></td>
-                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                                <td style="padding:10px 12px;">
+                                    <div style="font-weight:600; margin-bottom:6px;">○ <span th:text="${item.itemName}"></span></div>
+                                    <div th:if="${item.itemMethod != null and !item.itemMethod.isEmpty()}"
+                                         th:with="lines=${item.itemMethod.split('\n')}">
+                                        <div th:each="line : ${lines}" th:if="${!line.trim().isEmpty()}"
+                                             style="padding-left:18px; color:#444; margin-bottom:3px; line-height:1.6;">
+                                            • <span th:text="${line.trim()}"></span>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

@@ -224,27 +224,27 @@
             </table>
         </div>
 
-        <!-- UPIS_SW: 제품 테이블 (하드코딩) -->
+        <!-- UPIS_SW: 제품 테이블 -->
         <div id="targetSW" style="display:none;">
             <table class="check-table">
-                <thead><tr><th>제품명</th><th>버전</th><th>수량</th><th>용도</th><th>설치일</th></tr></thead>
+                <thead><tr><th>제품명</th><th style="text-align:center;">버전</th><th style="text-align:center;">수량</th><th>용도</th><th style="text-align:center;">설치일</th></tr></thead>
                 <tbody>
-                    <tr><td>GeoNURIS Spatial Server</td><td>3.0</td><td>1식</td><td>공간자료 저장 및 관리</td><td></td></tr>
-                    <tr><td>GeoNURIS GeoWeb Server</td><td>3.0</td><td>1식</td><td>웹 기반의 공간자료 서비스</td><td></td></tr>
-                    <tr><td>GeoNURIS Desktop Pro</td><td>3.0</td><td>1식</td><td>GIS 데이터 관리 및 모니터링</td><td></td></tr>
+                    <tr><td>GeoNURIS Spatial Server</td><td style="text-align:center;">3.0</td><td style="text-align:center;">1식</td><td>공간자료 저장 및 관리</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
+                    <tr><td>GeoNURIS GeoWeb Server</td><td style="text-align:center;">3.0</td><td style="text-align:center;">1식</td><td>웹 기반의 공간자료 서비스</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
+                    <tr><td>GeoNURIS Desktop Pro</td><td style="text-align:center;">3.0</td><td style="text-align:center;">1식</td><td>GIS 데이터 관리 및 모니터링</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- KRAS: 제품 테이블 (하드코딩, 버전 없음) -->
+        <!-- KRAS: 제품 테이블 -->
         <div id="targetKRAS" style="display:none;">
             <table class="check-table">
-                <thead><tr><th>제품명</th><th>수량</th><th>용도</th><th>설치일</th></tr></thead>
+                <thead><tr><th>제품명</th><th style="text-align:center;">수량</th><th>용도</th><th style="text-align:center;">설치일</th></tr></thead>
                 <tbody>
-                    <tr><td>GeoNURIS Spatial Server</td><td>1식</td><td>공간자료 저장 및 관리</td><td></td></tr>
-                    <tr><td>GeoNURIS GeoWeb Server</td><td>1식</td><td>웹 기반의 공간자료 서비스</td><td></td></tr>
-                    <tr><td>GeoNURIS Desktop Pro</td><td>1식</td><td>GIS 데이터 관리 및 모니터링</td><td></td></tr>
-                    <tr><td>KRAS 공용인터페이스</td><td>1식</td><td>측량성과프로그램</td><td></td></tr>
+                    <tr><td>GeoNURIS Spatial Server</td><td style="text-align:center;">1식</td><td>공간자료 저장 및 관리</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
+                    <tr><td>GeoNURIS GeoWeb Server</td><td style="text-align:center;">1식</td><td>웹 기반의 공간자료 서비스</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
+                    <tr><td>GeoNURIS Desktop Pro</td><td style="text-align:center;">1식</td><td>GIS 데이터 관리 및 모니터링</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
+                    <tr><td>KRAS 공용인터페이스</td><td style="text-align:center;">1식</td><td>측량성과프로그램</td><td class="inst-dt-cell" style="text-align:center;"></td></tr>
                 </tbody>
             </table>
         </div>
@@ -642,6 +642,16 @@ function loadProjectInfo() {
             document.getElementById('cover_sysType').value = sysType;
             document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(sysType);
             onSysTypeChange();
+
+            // 설치일 자동 채우기
+            if (p.instDt) {
+                document.querySelectorAll('.inst-dt-cell').forEach(function(td) {
+                    td.textContent = p.instDt;
+                });
+            }
+
+            // 시스템 구성도 로딩
+            loadSystemDiagram(sysType);
         });
 
     // 서버정보 + 소프트웨어 자동 로드
@@ -657,6 +667,91 @@ function loadProjectInfo() {
     }
 
     startAutoDraft();
+}
+
+// === 시스템 구성도 로딩 ===
+function loadSystemDiagram(sysType) {
+    var area = document.getElementById('diagramArea');
+    if (!area) return;
+
+    // UPIS 구성도 (시군구청 DB/AP Server + 국토교통부 + 연계시스템)
+    var upisDiagram = '<div style="font-weight:700;color:#1565c0;margin-bottom:14px;font-size:0.95em;">UPIS 시스템 구성도</div>' +
+        '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;font-size:0.82em;">' +
+        // 업무담당자
+        '<div style="flex:0 0 130px;border:1px solid #ccc;border-radius:8px;padding:12px;text-align:center;background:#f9f9f9;">' +
+        '<div style="font-weight:700;color:#1565c0;border:2px solid #1565c0;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">업무 담당자</div>' +
+        '<div style="border:1px solid #aaa;border-radius:6px;padding:8px;margin-top:6px;background:#fff;">' +
+        '<div style="font-weight:600;color:#1565c0;margin-bottom:4px;">표준UPIS (Client)</div>' +
+        '<div style="font-size:0.9em;color:#555;">Web브라우저<br/>Windows</div></div></div>' +
+        // 화살표
+        '<div style="display:flex;align-items:center;font-size:1.5em;color:#999;">⇄</div>' +
+        // 시군구청 서버
+        '<div style="flex:1;min-width:200px;border:1px solid #999;border-radius:8px;padding:14px;background:#f5f5f5;">' +
+        '<div style="text-align:center;font-weight:700;color:#1565c0;border:2px solid #1565c0;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:10px;">시군구청</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;">' +
+        '<div style="flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center;">' +
+        '<div style="font-weight:700;margin-bottom:4px;">DB Server</div><div style="font-size:0.9em;color:#555;">GeoNURIS Spatial Server<br/>Oracle DBMS</div></div>' +
+        '<div style="flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center;">' +
+        '<div style="font-weight:700;margin-bottom:4px;">AP Server</div><div style="font-size:0.9em;color:#555;">GeoNURIS GeoWeb Server<br/>Tomcat WAS</div></div></div>' +
+        '<div style="text-align:center;margin-top:8px;font-weight:600;background:#1a237e;color:#fff;padding:6px;border-radius:4px;">UPIS 표준시스템</div></div>' +
+        // 화살표
+        '<div style="display:flex;align-items:center;font-size:1.5em;color:#999;">⇄</div>' +
+        // 국토교통부
+        '<div style="flex:0 0 150px;border:1px solid #999;border-radius:8px;padding:12px;background:#f5f5f5;text-align:center;">' +
+        '<div style="font-weight:700;color:#1565c0;border:2px solid #1565c0;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">국토교통부</div>' +
+        '<div style="font-size:0.85em;color:#555;">AP Server<br/>대시민 서비스<br/>DB Server</div>' +
+        '<div style="margin-top:6px;font-weight:600;background:#1a237e;color:#fff;padding:5px;border-radius:4px;font-size:0.85em;">국토교통부<br/>UPIS 표준시스템</div></div></div>' +
+        // 연계시스템
+        '<div style="margin-top:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px;text-align:center;font-size:0.82em;">' +
+        '<span style="font-weight:700;color:#2e7d32;">연계시스템</span>&nbsp;&nbsp;' +
+        '부동산종합공부시스템 | 건축행정정보시스템 | 새올 지적정보시스템 | 전자결재시스템 | 새올 민원정보시스템 | 토지이용규제정보시스템 | GPKI 로그인</div>';
+
+    // KRAS 구성도 (Client → AP → DB 3단 구조)
+    var krasDiagram = '<div style="font-weight:700;color:#1565c0;margin-bottom:14px;font-size:0.95em;">KRAS 시스템 구성도</div>' +
+        '<div style="display:flex;gap:0;font-size:0.82em;align-items:stretch;">' +
+        // Client
+        '<div style="flex:1;background:#666;border-radius:8px 0 0 8px;padding:3px;">' +
+        '<div style="text-align:center;color:#fff;font-weight:700;font-size:1.1em;padding:8px;">Client</div>' +
+        '<div style="background:#f5f5f5;border-radius:6px;padding:14px;margin:0 3px 3px;">' +
+        '<div style="text-align:center;font-weight:700;margin-bottom:10px;">PC</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">부동산종합공부 사이트</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">측량성과프로그램</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;text-align:center;">GeoDT</div></div></div>' +
+        // 화살표 요청/답변
+        '<div style="display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 6px;">' +
+        '<div style="background:#4caf50;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">요청 ▶</div>' +
+        '<div style="background:#ff9800;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">◀ 답변</div></div>' +
+        // Server (AP + DB)
+        '<div style="flex:2;display:flex;gap:0;">' +
+        // AP
+        '<div style="flex:1;background:#555;border-radius:0;padding:3px;">' +
+        '<div style="text-align:center;color:#fff;font-weight:700;font-size:1.1em;padding:8px;">Server</div>' +
+        '<div style="background:#e0e0e0;border-radius:6px;padding:14px;margin:0 3px 3px;">' +
+        '<div style="text-align:center;font-weight:700;margin-bottom:10px;">AP</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">부동산종합공부시스템</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">KrasAgent</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;text-align:center;">GeoNURIS GeoWeb Server</div></div></div>' +
+        // 화살표
+        '<div style="display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 6px;">' +
+        '<div style="background:#4caf50;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">요청 ▶</div>' +
+        '<div style="background:#ff9800;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">◀ 답변</div></div>' +
+        // DB
+        '<div style="flex:1;background:#555;padding:3px;border-radius:0 8px 8px 0;">' +
+        '<div style="text-align:center;color:#fff;font-weight:700;font-size:1.1em;padding:8px;">Server</div>' +
+        '<div style="background:#e0e0e0;border-radius:6px;padding:14px;margin:0 3px 3px;">' +
+        '<div style="text-align:center;font-weight:700;margin-bottom:10px;">DB</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">Oracle</div>' +
+        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;text-align:center;">GeoNURIS Spatial Server</div></div></div></div></div>';
+
+    var diagrams = {
+        'KRAS': krasDiagram,
+        'UPIS': upisDiagram,
+        'UPIS_SW': upisDiagram,
+        'IPSS': upisDiagram
+    };
+    area.style.border = 'none';
+    area.style.padding = '10px';
+    area.innerHTML = diagrams[sysType] || '<div style="text-align:center;color:#999;">해당 시스템유형의 구성도가 없습니다.</div>';
 }
 
 // === 시스템유형 변경 → 탭/섹션 동적 표시 + 템플릿 로드 ===
@@ -725,7 +820,7 @@ function onSysTypeChange() {
 function updateGisHeader(type) {
     var head = document.getElementById('gisCheckHead');
     if (type === 'KRAS') {
-        head.innerHTML = '<tr><th style="width:180px;">대상</th><th>점검 내용 및 방법</th><th style="width:140px;">결과</th></tr>';
+        head.innerHTML = '<tr><th style="width:180px;">대상</th><th>점검 내용</th><th style="width:140px;">결과</th></tr>';
     } else {
         head.innerHTML = '<tr><th style="width:180px;">대상</th><th>점검 항목</th><th>점검 내용 및 방법</th><th style="width:140px;">결과</th></tr>';
     }
@@ -832,13 +927,18 @@ function renderGisSection(bodyId, items, templateType) {
     grouped.forEach(function(g) {
         g.items.forEach(function(item, i) {
             if (isKras) {
-                // 3칼럼: 대상 | 점검 내용 및 방법 | 결과
-                // itemName + itemMethod를 합쳐서 표시
-                var methodText = item.itemName;
-                if (item.itemMethod) methodText += ' | ' + item.itemMethod;
+                // 3칼럼: 대상 | 점검 내용 (○/● 구조화) | 결과
+                var contentHtml = '<div style="font-weight:600; margin-bottom:4px;">○ ' + item.itemName + '</div>';
+                if (item.itemMethod) {
+                    var lines = item.itemMethod.split('\n');
+                    for (var li = 0; li < lines.length; li++) {
+                        var line = lines[li].trim();
+                        if (line) contentHtml += '<div style="padding-left:18px; color:#444; margin-bottom:2px; line-height:1.6;">• ' + line + '</div>';
+                    }
+                }
                 html += '<tr>' +
                     (i === 0 ? '<td class="cat-cell" rowspan="' + g.items.length + '">' + g.cat + '</td>' : '') +
-                    '<td>' + methodText + '</td>' +
+                    '<td style="padding:10px 12px;">' + contentHtml + '</td>' +
                     '<td class="result-cell">' + resultCheckboxes('GIS_' + item.sortOrder) + '</td></tr>';
             } else {
                 // 4칼럼: 대상 | 점검 항목 | 점검 내용 및 방법 | 결과
