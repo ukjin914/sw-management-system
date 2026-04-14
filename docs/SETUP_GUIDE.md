@@ -18,23 +18,22 @@ spring.datasource.username=사용자명
 spring.datasource.password=비밀번호
 ```
 
-### 3. ⚠️ GeoNURIS_License.jar 파일 배치 (중요!)
-
-**이 파일은 Git에 포함되지 않습니다. 반드시 수동으로 배치해야 합니다.**
+### 3. GeoNURIS_License.jar 파일 (Git에 포함됨)
 
 ```
 경로: src/main/resources/geonuris/GeoNURIS_License.jar
 ```
 
-#### 파일을 받을 수 있는 곳
-- 기존 운영 서버에서 복사
-- 사무실 PC의 `src/main/resources/geonuris/` 디렉토리
-- 라이선스 관리자에게 요청
+**Private 저장소에 포함되어 있으므로 `git clone` 시 자동 포함됩니다.**
+- 별도 수동 배치 불필요
+- Maven Enforcer 플러그인이 빌드 전 파일 존재 여부 자동 검증
 
-#### 파일 없이 실행하면?
-- 서버는 정상 기동됨
-- **GeoNURIS 라이선스 발급 메뉴에서 실행 시** 아래 에러 발생:
-  > 발급 실패: GeoNURIS_License.jar 없음.
+#### 만약 파일이 없다면?
+- 누군가 실수로 삭제했거나 `.gitignore`에서 제외했을 가능성
+- `git pull` 후에도 파일이 없다면 Git 이력 확인:
+  ```
+  git log --all --oneline -- src/main/resources/geonuris/GeoNURIS_License.jar
+  ```
 
 ### 4. 빌드 및 실행
 ```bash

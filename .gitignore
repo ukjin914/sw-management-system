@@ -47,10 +47,9 @@ application-local.properties
 application-dev.properties
 application-prod.properties
 
-# GeoNURIS 라이선스 발급용 바이너리 (외부 제공, Git 제외)
-# - 신규 PC에서는 src/main/resources/geonuris/ 에 수동 배치 필요
-# - 자세한 내용은 docs/SETUP_GUIDE.md 참조
-src/main/resources/geonuris/GeoNURIS_License.jar
+# GeoNURIS 라이선스 발급용 바이너리는 Git에 포함됨 (Private 저장소)
+# - Maven Enforcer 플러그인이 빌드 전 파일 존재 검증
+!src/main/resources/geonuris/GeoNURIS_License.jar
 
 # 임시 파일
 *.tmp
