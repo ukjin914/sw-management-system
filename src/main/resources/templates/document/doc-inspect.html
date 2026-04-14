@@ -350,6 +350,19 @@
             <thead><tr><th style="width:100px;">대분류</th><th style="width:100px;">중분류</th><th>점검 내용</th><th style="width:140px;">결과</th></tr></thead>
             <tbody id="appCheckBody"></tbody>
         </table>
+        <!-- 표준시스템 기타 (APP_ETC) -->
+        <table class="check-table" id="appEtcTable" style="margin-top:0;">
+            <thead><tr><th colspan="1" style="background:#e3f2fd;text-align:left;font-weight:bold;">기타</th></tr></thead>
+            <tbody>
+                <tr><td>
+                    <textarea id="app_etc" rows="4" maxlength="500"
+                              style="width:100%;border:none;resize:vertical;"
+                              placeholder="기타 사항 입력"
+                              oninput="updateAppEtcCounter()"></textarea>
+                    <small id="app_etc_counter" style="display:block;text-align:right;color:#999;font-size:0.8em;margin-top:2px;">0 / 500</small>
+                </td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -779,6 +792,8 @@ function onSysTypeChange() {
     targetSW.style.display = 'none';
     targetKRAS.style.display = 'none';
 
+    var appEtcTable = document.getElementById('appEtcTable');
+
     if (sysType === 'UPIS') {
         // UPIS HW+SW
         tabServer.style.display = '';
@@ -788,6 +803,7 @@ function onSysTypeChange() {
         dbmsSection.style.display = '';
         appTitle.textContent = '표준시스템 점검결과';
         appTable.style.display = '';
+        if (appEtcTable) appEtcTable.style.display = '';
         // GIS 헤더: 4칼럼
         updateGisHeader('UPIS');
         // 번호 동적 업데이트
@@ -800,16 +816,18 @@ function onSysTypeChange() {
         dbmsSection.style.display = 'none';
         appTitle.textContent = '표준시스템 점검결과';
         appTable.style.display = '';
+        if (appEtcTable) appEtcTable.style.display = '';
         updateGisHeader('UPIS');
         updateSectionNumbers('UPIS_SW');
     } else if (sysType === 'KRAS') {
-        // KRAS
+        // KRAS — 7번 섹션 + 기타 모두 숨김 (FR-7)
         tabServer.style.display = 'none';
         tabSw.textContent = '③ SW 점검결과';
         targetKRAS.style.display = '';
         dbmsSection.style.display = 'none';
         appTitle.textContent = '';
         appTable.style.display = 'none';
+        if (appEtcTable) appEtcTable.style.display = 'none';
         updateGisHeader('KRAS');
         updateSectionNumbers('KRAS');
     } else {
@@ -818,6 +836,7 @@ function onSysTypeChange() {
         dbmsSection.style.display = '';
         appTitle.textContent = '표준시스템 점검결과';
         appTable.style.display = '';
+        if (appEtcTable) appEtcTable.style.display = '';
         updateGisHeader('UPIS');
     }
 
@@ -852,6 +871,17 @@ function updateSectionNumbers(type) {
 function updateCoverTitle() {
     var projNm = document.getElementById('cover_projNm').value || '';
     document.getElementById('cover_title').value = projNm ? projNm + ' 점검내역서' : '점검내역서';
+}
+
+// FR-10: 표준시스템 기타 잔여 글자 수 안내 (500자, 95% 이상 붉은색)
+function updateAppEtcCounter() {
+    var el = document.getElementById('app_etc');
+    var counter = document.getElementById('app_etc_counter');
+    if (!el || !counter) return;
+    var len = el.value.length;
+    var max = 500;
+    counter.textContent = len + ' / ' + max;
+    counter.style.color = (len >= max * 0.95) ? '#e74a3b' : '#999';
 }
 
 // === 템플릿 항목 API 로드 ===
@@ -1183,6 +1213,14 @@ function collectFormData(status) {
         checkResults.push({ section: 'DBMS_ETC', category: '기타', itemName: '', itemMethod: '', result: dbmsEtcEl.value, sortOrder: 0 });
     }
 
+    // 표준시스템(APP) 기타 — FR-9: 7번 섹션이 보이는 경우에만 저장 payload 포함
+    var appEtcEl = document.getElementById('app_etc');
+    var appTableEl = document.getElementById('appCheckTable');
+    var appVisible = appTableEl && appTableEl.style.display !== 'none';
+    if (appEtcEl && appEtcEl.value && appVisible) {
+        checkResults.push({ section: 'APP_ETC', category: '기타', itemName: '', itemMethod: '', result: appEtcEl.value, sortOrder: 0 });
+    }
+
     return {
         id: document.getElementById('reportId').value || null,
         pjtId: projId,
@@ -1448,6 +1486,14 @@ function restoreCheckResults(results) {
         if (r.section === 'DBMS_ETC') {
             var etcEl = document.getElementById('dbms_etc');
             if (etcEl) etcEl.value = r.result || '';
+            return;
+        }
+        if (r.section === 'APP_ETC') {
+            var appEtcEl2 = document.getElementById('app_etc');
+            if (appEtcEl2) {
+                appEtcEl2.value = r.result || '';
+                if (typeof updateAppEtcCounter === 'function') updateAppEtcCounter();
+            }
             return;
         }
 

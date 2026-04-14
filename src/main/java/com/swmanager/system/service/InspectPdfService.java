@@ -48,6 +48,7 @@ public class InspectPdfService {
             context.setVariable("dbUsage", report.getCheckResults().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList());
             context.setVariable("apUsage", report.getCheckResults().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList());
             context.setVariable("dbmsEtc", report.getCheckResults().stream().filter(r -> "DBMS_ETC".equals(r.getSection())).toList());
+            context.setVariable("appEtc", report.getCheckResults().stream().filter(r -> "APP_ETC".equals(r.getSection())).toList());
         }
 
         if (project != null) {

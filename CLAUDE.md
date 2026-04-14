@@ -62,15 +62,24 @@ Claude는 산출물을 codex CLI로 전달해 검토 결과를 받는다.
 ### 호출 예시
 
 ```bash
-# 기획서 검토
-codex review --type plan --file docs/plans/feature-xxx.md
+# 기획서 검토 — 파일 경로를 프롬프트에 명시해 review 호출
+codex review "파일 docs/plans/feature-xxx.md 를 검토해줘. 평가 항목: 1) 요건 완전성 2) 설계 타당성 3) DB 영향 4) 리스크 누락 5) 개선 권고"
 
 # 개발계획 검토
-codex review --type dev-plan --file docs/dev-plans/feature-xxx.md
+codex review "파일 docs/dev-plans/feature-xxx.md 를 검토해줘. 평가 항목: 1) 기획서 요구사항 모두 반영 2) 작업 순서 논리성 3) 회귀 테스트 커버리지 4) 롤백 전략"
 
-# 코드 검증
-codex verify --files src/main/java/.../XxxService.java
+# 구현 후 검증 (Specs 충족 중심)
+codex review "구현 결과가 기획서(docs/plans/feature-xxx.md)와 개발계획서(docs/dev-plans/feature-xxx.md)의 모든 요구사항(FR/NFR/T#)을 충족하는지 항목별로 대조·확인해줘"
 ```
+
+### codex 검증 원칙 (⚠ 반드시 준수)
+
+구현 완료 후 codex 검증 단계에서는 **최초 기획서 및 개발계획서의 요구사항(Specs) 을 모두 충족했는가** 를 **중점적으로** 검증한다.
+
+1. codex 프롬프트에 **기획서 파일 경로와 개발계획서 파일 경로를 반드시 명시**한다.
+2. codex 는 구현 결과(변경된 파일)를 읽고 **FR-1 ~ FR-n, NFR-1 ~ NFR-n, T1 ~ Tn 각 항목에 대해 "충족/미충족/부분충족" 을 판정**한다.
+3. 일부라도 미충족이면 평가는 `⚠ 수정필요` 또는 `❌ 반려`.
+4. 스타일·네이밍 등 부가 개선 의견은 주 검증 이후 별도 섹션으로 덧붙인다 (Specs 충족 판정과 혼동 금지).
 
 ### 보고 형식
 

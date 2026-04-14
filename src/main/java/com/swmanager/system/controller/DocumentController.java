@@ -1440,6 +1440,7 @@ public class DocumentController {
                 model.addAttribute("dbUsage", report.getCheckResults().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList());
                 model.addAttribute("apUsage", report.getCheckResults().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList());
                 model.addAttribute("dbmsEtc", report.getCheckResults().stream().filter(r -> "DBMS_ETC".equals(r.getSection())).toList());
+                model.addAttribute("appEtc", report.getCheckResults().stream().filter(r -> "APP_ETC".equals(r.getSection())).toList());
             }
 
             var project = swProjectRepository.findById(report.getPjtId()).orElse(null);
@@ -1476,6 +1477,7 @@ public class DocumentController {
                 model.addAttribute("dbUsage", report.getCheckResults().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList());
                 model.addAttribute("apUsage", report.getCheckResults().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList());
                 model.addAttribute("dbmsEtc", report.getCheckResults().stream().filter(r -> "DBMS_ETC".equals(r.getSection())).toList());
+                model.addAttribute("appEtc", report.getCheckResults().stream().filter(r -> "APP_ETC".equals(r.getSection())).toList());
             }
 
             // 프로젝트 정보

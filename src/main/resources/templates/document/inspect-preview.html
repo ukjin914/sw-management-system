@@ -357,6 +357,17 @@
                             </tr>
                         </tbody>
                     </table>
+                    <!-- APP 기타 (FR-11: 개행 보존) -->
+                    <th:block th:if="${appEtc != null and !appEtc.isEmpty()}">
+                        <table class="data-table" style="margin-top:0;">
+                            <thead><tr><th style="background:#e3f2fd;text-align:left;font-weight:bold;">기타</th></tr></thead>
+                            <tbody>
+                                <tr th:each="u : ${appEtc}">
+                                    <td th:text="${u.result}" style="white-space: pre-wrap; word-break: break-word;"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </th:block>
                 </th:block>
 
         </div>
